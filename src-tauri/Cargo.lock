@@ -48,6 +48,8 @@ checksum = "216261ddc8289130e551ddcd5ce8a064710c0d064a4d2895c67151c92b5443f6"
 name = "app"
 version = "0.1.0"
 dependencies = [
+ "calamine",
+ "lazy_static",
  "serde",
  "serde_json",
  "tauri",
@@ -206,6 +208,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "calamine"
+version = "0.19.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6381d1037ee9b8a6c8eb97936add0331a1aabd148d5b6f35f1cda6e5dec44f40"
+dependencies = [
+ "byteorder",
+ "codepage",
+ "encoding_rs",
+ "log",
+ "quick-xml 0.25.0",
+ "serde",
+ "zip",
+]
+
+[[package]]
 name = "cargo_toml"
 version = "0.11.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -291,6 +308,15 @@ dependencies = [
  "foreign-types",
  "libc",
  "objc",
+]
+
+[[package]]
+name = "codepage"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8b0e9222c0cdf2c6ac27d73f664f9520266fa911c3106329d359f8861cb8bde9"
+dependencies = [
+ "encoding_rs",
 ]
 
 [[package]]
@@ -1988,6 +2014,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "quick-xml"
+version = "0.25.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "58e21a144a0ffb5fad7b464babcdab934a325ad69b7c0373bcfef5cbd9799ca9"
+dependencies = [
+ "encoding_rs",
+ "memchr",
+]
+
+[[package]]
 name = "quote"
 version = "1.0.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2834,7 +2870,7 @@ version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c58de036c4d2e20717024de2a3c4bf56c301f07b21bc8ef9b57189fce06f1f3b"
 dependencies = [
- "quick-xml",
+ "quick-xml 0.23.1",
  "strum",
  "windows 0.39.0",
 ]
@@ -3693,3 +3729,15 @@ name = "xml-rs"
 version = "0.8.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d2d7d3948613f75c98fd9328cfdcc45acc4d360655289d0a7d4ec931392200a3"
+
+[[package]]
+name = "zip"
+version = "0.6.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "537ce7411d25e54e8ae21a7ce0b15840e7bfcff15b51d697ec3266cc76bdf080"
+dependencies = [
+ "byteorder",
+ "crc32fast",
+ "crossbeam-utils",
+ "flate2",
+]
