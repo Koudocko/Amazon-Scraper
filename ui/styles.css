@@ -1,0 +1,33 @@
+:root{
+	--foreground: #d1c2e9;
+	--background: #1e2127;
+	--element_dark: #2e3137;
+	--element_light: #4d5259;
+	--highlight: #4d52ff;
+}
+
+body{
+	background-color: var(--background)
+}
+
+.foreground{
+	background-color: var(--element_dark);
+	color: var(--foreground);
+	border-width: 0px;
+	border-style: solid;
+	border-radius: 5px;
+	padding: 10px;
+	font-size: 15px;
+}
+
+.button{
+	transition-duration: 0.1s;
+}
+
+.button:hover{
+	background-color: var(--element_light);
+}
+
+.button:active{
+	background-color: var(--highlight);
+}
