@@ -6,6 +6,7 @@
 #[macro_use(lazy_static)]
 extern crate lazy_static;
 
+use scraper::{Html, Selector};
 use calamine::{Range, Xlsx, open_workbook, Reader, DataType};
 use std::sync::Mutex;
 
@@ -13,8 +14,57 @@ lazy_static!{
     static ref DATABASE: Mutex<Option<Range<DataType>>> = Mutex::new(None);
 }
 
-fn lookup_product(lpn: &str)-> Result<String, ()>{Err(())}
-fn scrape_data(body: &str)-> Result<(String, String), ()>{Err(())}
+fn lookup_product(lpn: &str)-> Result<String, ()>{
+    let mut asin = String::new();
+
+    let sheet = (*DATABASE.lock().unwrap()).clone().unwrap();
+    let lpn_idx = (0..sheet.width()).find(|idx| sheet.get((0, *idx)).unwrap() == "LPN").unwrap();
+    let asin_idx = (0..sheet.width()).find(|idx| sheet.get((0, *idx)).unwrap() == "Asin").unwrap();
+
+    for row in sheet.rows(){
+         let curr = row[lpn_idx].to_string();
+         if curr == lpn{
+             asin = row[asin_idx].to_string();
+             break;
+         }
+    }
+
+    if asin.is_empty(){
+        Err(())
+    }
+    else{
+        Ok(asin)
+    }
+}
+fn scrape_data(body: &str)-> Result<(String, String), ()>{
+    let mut product = (String::new(), String::new());
+
+    // Scrape html for data
+    let fragment = Html::parse_document(&body);
+    if let Some(name) = fragment.select(
+        &Selector::parse(r#"span[id="productTitle"]"#).unwrap())
+        .next(){
+        product.0 = name.inner_html().trim().to_owned();
+    }
+
+    if let Some(image) = fragment.select(
+        &Selector::parse(r#"img[id="imgBlkFront"]"#).unwrap())
+        .next(){
+        product.1 = image.value().attr("src").unwrap().to_owned();
+    }
+    else if let Some(image) = fragment.select(
+        &Selector::parse(r#"img[id="landingImage"]"#).unwrap())
+        .next(){
+        product.1 = image.value().attr("src").unwrap().to_owned();
+    }
+
+    if product.0.is_empty(){
+        Err(())
+    }
+    else{
+        Ok(product)
+    }
+}
 
 #[tauri::command]
 async fn get_product(lpn: String)-> (String, String){
@@ -42,6 +92,7 @@ fn main() {
     }
 
     tauri::Builder::default()
+        .invoke_handler(tauri::generate_handler![get_product])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
