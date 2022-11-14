@@ -7,16 +7,14 @@
     <title>Document</title>
   </head>
   <body>
-    <a>
-      <button class="foreground button" onClick="fetchProduct()">what Product</button>
-      <input class="foreground" type="text" id="lpnInput">
-      <nav style="padding-top: 10px; padding-bottom: 10px; border-radius: 5px; float: right; background-color: var(--element_dark)">
-        <a style="border-bottom-right-radius: 0px; border-top-right-radius: 0px; text-decoration: none;" class="foreground button" href="index.html">LPN Lookup</a>
-        <a style="border-bottom-left-radius: 0px; border-top-left-radius: 0px; background-color: var(--highlight); text-decoration: none;"class="foreground button" href="name_lookup.html">Name Lookup</a>
-      </nav>
-      <h1 class="foreground" id="productName">Product Name</h1>
-      <img class="foreground" id="productImage">
-    </a>
+    <button class="foreground button" onClick="fetchProduct()">what Product</button>
+    <input class="foreground" type="text" id="lpnInput">
+    <nav style="padding-top: 10px; padding-bottom: 10px; border-radius: 5px; float: right; background-color: var(--element_dark)">
+      <a style="border-bottom-right-radius: 0px; border-top-right-radius: 0px; text-decoration: none;" class="foreground button" href="index.html">LPN Lookup</a>
+      <a style="border-bottom-left-radius: 0px; border-top-left-radius: 0px; background-color: var(--highlight); text-decoration: none;"class="foreground button" href="name_lookup.html">Name Lookup</a>
+    </nav>
+    <h1 class="foreground" id="productName">Product Name</h1>
+    <img class="foreground" id="productImage">
     <script>
       const { invoke } = window.__TAURI__.tauri 
 
