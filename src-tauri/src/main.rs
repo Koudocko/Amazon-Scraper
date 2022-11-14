@@ -61,6 +61,16 @@ fn scrape_data(body: &str)-> Result<[String; 3], ()>{
         product[1] = image.value().attr("src").unwrap().to_owned();
     }
 
+    for description in fragment.select(
+        &Selector::parse(r#"div[id="feature-bullets"] > ul > li > span.a-list-item"#).unwrap()){
+        product[2] += &(description.inner_html().trim().to_owned() + " ; ");
+    }
+    if let Some(description) = fragment.select(
+        &Selector::parse(r#"div[id="bookDescription_feature_div"] > div > div > span"#).unwrap())
+        .next(){
+        product[2] += &("\n".to_owned() + description.inner_html().trim());
+    }
+
     if product[0].is_empty(){
         Err(())
     }
