@@ -10,12 +10,14 @@ use scraper::{Html, Selector};
 use calamine::{Range, Xlsx, open_workbook, Reader, DataType};
 use std::sync::Mutex;
 use tauri::api::dialog;
-use tauri::{CustomMenuItem, Menu};
+use tauri::{CustomMenuItem, Menu, Submenu};
 use std::thread;
 
 lazy_static!{
     static ref DATABASE: Mutex<Option<Range<DataType>>> = Mutex::new(None);
 }
+
+static mut CURR_LOT: i32 = 0;
 
 fn lookup_product(lpn: &str)-> Result<String, ()>{
     let mut asin = String::new();
@@ -39,8 +41,9 @@ fn lookup_product(lpn: &str)-> Result<String, ()>{
         Ok(asin)
     }
 }
-fn scrape_data(body: &str)-> Result<[String; 3], ()>{
-    let mut product: [String; 3] = Default::default(); 
+
+fn scrape_data(body: &str)-> Result<[String; 4], ()>{
+    let mut product: [String; 4] = Default::default(); 
 
     // Scrape html for data
     let fragment = Html::parse_document(&body);
@@ -71,6 +74,13 @@ fn scrape_data(body: &str)-> Result<[String; 3], ()>{
         product[2] += &("\n".to_owned() + description.inner_html().trim());
     }
 
+    if let Some(msrp) = fragment.select(
+        &Selector::parse(r#"span > span.a-offscreen"#).unwrap())
+        .next(){
+        product[3] = msrp.inner_html().trim().to_owned();
+        
+    }
+
     if product[0].is_empty(){
         Err(())
     }
@@ -80,7 +90,7 @@ fn scrape_data(body: &str)-> Result<[String; 3], ()>{
 }
 
 #[tauri::command]
-async fn get_product(lpn: String)-> Option<[String; 3]>{
+async fn get_product(lpn: String)-> Option<[String; 4]>{
     if DATABASE.lock().unwrap().is_some(){
         if let Ok(asin) = lookup_product(&lpn){
             if let Ok(body) = reqwest::get(format!("https://amazon.com/dp/{}", asin))
@@ -97,36 +107,37 @@ async fn get_product(lpn: String)-> Option<[String; 3]>{
 
 #[tokio::main]
 async fn main(){
-    let import_spreadsheet = CustomMenuItem::new("import_spreadsheet".to_string(), "Import Spreadsheet");
+    let spreadsheet = CustomMenuItem::new("spreadsheet".to_string(), "Spreadsheet");
+    let submenu = Submenu::new("Import", Menu::new().add_item(spreadsheet));
     let menu = Menu::new()
-        .add_item(import_spreadsheet);
+        .add_submenu(submenu);
 
     tauri::Builder::default()
-        .menu(menu)
-        .on_menu_event(|event|{
-            match event.menu_item_id(){
-                "import_spreadsheet" =>{
-                    dialog::FileDialogBuilder::default()
-                        .add_filter("", &["xlsx"])
-                        .pick_file(|path_buf|{
-                            if let Some(path) = path_buf{
-                                if DATABASE.lock().unwrap().is_none(){
-                                    // Load excel database
-                                    thread::spawn(||{
-                                        let mut document: Xlsx<_> = open_workbook(path).unwrap();
+    .menu(menu)
+    .on_menu_event(|event|{
+        match event.menu_item_id(){
+            "spreadsheet" =>{
+                dialog::FileDialogBuilder::default()
+                .add_filter("", &["xlsx"])
+                .pick_file(|path_buf|{
+                    if let Some(path) = path_buf{
+                        if DATABASE.lock().unwrap().is_none(){
+                            // Load excel database
+                            thread::spawn(||{
+                                let mut document: Xlsx<_> = open_workbook(path).unwrap();
 
-                                        if let Some(Ok(sheet)) = document.worksheet_range_at(0){
-                                            *DATABASE.lock().unwrap() = Some(sheet);
-                                        }
-                                    });
+                                if let Some(Ok(sheet)) = document.worksheet_range_at(0){
+                                    *DATABASE.lock().unwrap() = Some(sheet);
                                 }
-                            }
-                        })
-                }
-                _ =>{}
+                            });
+                        }
+                    }
+                })
             }
-        })
-        .invoke_handler(tauri::generate_handler![get_product])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+            _ =>{}
+        }
+    })
+    .invoke_handler(tauri::generate_handler![get_product])
+    .run(tauri::generate_context!())
+    .expect("error while running tauri application");
 }

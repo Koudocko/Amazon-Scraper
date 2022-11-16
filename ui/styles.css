@@ -3,7 +3,7 @@
 	--background: #1e2127;
 	--element_dark: #2e3137;
 	--element_light: #4d5259;
-	--highlight: #4d52ff;
+	--highlight: #9061E1;
 }
 
 body{
@@ -17,6 +17,15 @@ body{
 	border-style: solid;
 	border-radius: 5px;
 	padding: 10px;
+	font-size: 15px;
+}
+
+.foreground-inner{
+	background-color: var(--element_light);
+	color: var(--foreground);
+	border-width: 0px;
+	border-style: solid;
+	border-radius: 5px;
 	font-size: 15px;
 }
 
