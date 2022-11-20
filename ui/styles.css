@@ -2,12 +2,26 @@
 	--foreground: #d1c2e9;
 	--background: #1e2127;
 	--element_dark: #2e3137;
-	--element_light: #4d5259;
+	--element_light: #3C4046;
 	--highlight: #9061E1;
 }
 
 body{
 	background-color: var(--background)
+}
+
+/* div{ */
+/* 	border-style: solid; */
+/* 	border-color: red; */
+/* } */
+
+.container{
+	display: flex;
+	width: 100%;
+}
+
+.container div{
+	flex: 1;
 }
 
 .foreground{
@@ -20,17 +34,9 @@ body{
 	font-size: 15px;
 }
 
-.foreground-inner{
-	background-color: var(--element_light);
-	color: var(--foreground);
-	border-width: 0px;
-	border-style: solid;
-	border-radius: 5px;
-	font-size: 15px;
-}
-
 .button{
 	transition-duration: 0.1s;
+	padding: 11px;
 }
 
 .button:hover{

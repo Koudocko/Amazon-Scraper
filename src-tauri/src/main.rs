@@ -3,42 +3,41 @@
   windows_subsystem = "windows"
 )]
 
-#[macro_use(lazy_static)]
-extern crate lazy_static;
-
 use scraper::{Html, Selector};
 use calamine::{Range, Xlsx, open_workbook, Reader, DataType};
+use std::io::Read;
 use std::sync::Mutex;
 use tauri::api::dialog;
 use tauri::{CustomMenuItem, Menu, Submenu};
 use std::thread;
+use std::fs::OpenOptions;
+use std::io::Write;
 
-lazy_static!{
-    static ref DATABASE: Mutex<Option<Range<DataType>>> = Mutex::new(None);
-}
-
-static mut CURR_LOT: i32 = 0;
+static mut DATABASE: Mutex<Option<Range<DataType>>> = Mutex::new(None);
+static mut OUTPUT_PATH: Mutex<Option<String>> = Mutex::new(None);
 
 fn lookup_product(lpn: &str)-> Result<String, ()>{
-    let mut asin = String::new();
+    unsafe{
+        let mut asin = String::new();
 
-    let sheet = (*DATABASE.lock().unwrap()).clone().unwrap();
-    let lpn_idx = (0..sheet.width()).find(|idx| sheet.get((0, *idx)).unwrap() == "LPN").unwrap();
-    let asin_idx = (0..sheet.width()).find(|idx| sheet.get((0, *idx)).unwrap() == "Asin").unwrap();
+        let sheet = (*DATABASE.lock().unwrap()).clone().unwrap();
+        let lpn_idx = (0..sheet.width()).find(|idx| sheet.get((0, *idx)).unwrap() == "LPN").unwrap();
+        let asin_idx = (0..sheet.width()).find(|idx| sheet.get((0, *idx)).unwrap() == "Asin").unwrap();
 
-    for row in sheet.rows(){
-         let curr = row[lpn_idx].to_string();
-         if curr == lpn{
-             asin = row[asin_idx].to_string();
-             break;
-         }
-    }
+        for row in sheet.rows(){
+             let curr = row[lpn_idx].to_string();
+             if curr == lpn{
+                 asin = row[asin_idx].to_string();
+                 break;
+             }
+        }
 
-    if asin.is_empty(){
-        Err(())
-    }
-    else{
-        Ok(asin)
+        if asin.is_empty(){
+            Err(())
+        }
+        else{
+            Ok(asin)
+        }
     }
 }
 
@@ -91,18 +90,58 @@ fn scrape_data(body: &str)-> Result<[String; 4], ()>{
 
 #[tauri::command]
 async fn get_product(lpn: String)-> Option<[String; 4]>{
-    if DATABASE.lock().unwrap().is_some(){
-        if let Ok(asin) = lookup_product(&lpn){
-            if let Ok(body) = reqwest::get(format!("https://amazon.com/dp/{}", asin))
-                .await.unwrap().text().await{
-                if let Ok(data) = scrape_data(&body){
-                    return Some(data);
+    unsafe{
+        if DATABASE.lock().unwrap().is_some(){
+            if let Ok(asin) = lookup_product(&lpn){
+                if let Ok(body) = reqwest::get(format!("https://amazon.com/dp/{}", asin))
+                    .await.unwrap().text().await{
+                    if let Ok(data) = scrape_data(&body){
+                        return Some(data);
+                    }
                 }
             }
         }
-    }
 
-    None
+        None
+    }
+}
+
+#[tauri::command]
+async fn write_product(information: [String; 9])-> Option<()>{
+    unsafe{
+        if (*OUTPUT_PATH.lock().unwrap()).is_none(){
+            dialog::FileDialogBuilder::default()
+            .add_filter("", &["csv"])
+            .pick_file(|path_buf|{
+                if let Some(path) = path_buf{
+                    *OUTPUT_PATH.lock().unwrap() = Some(path.into_os_string().into_string().unwrap());
+                }
+            })
+        }
+
+        while (*OUTPUT_PATH.lock().unwrap()).is_none(){}
+        let mut handle = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .open((*OUTPUT_PATH.lock().unwrap()).clone().unwrap())
+            .unwrap();
+
+        let mut buf = String::new();
+        handle.read_to_string(&mut buf).unwrap();
+
+        if !buf.contains('\n'){
+            let header = String::from("Lot,Lead,Description 1,Description 2/Condition,Vendor,Shipping,Min Bid,Category,MSRP\n");
+            handle.write_all(header.as_bytes()).unwrap();
+        }
+
+        for field in information{
+            handle.write_all((field + ",").as_bytes()).unwrap();
+        }
+
+        handle.write_all("\n".as_bytes()).unwrap();
+
+        Some(())
+    }
 }
 
 #[tokio::main]
@@ -121,15 +160,17 @@ async fn main(){
                 .add_filter("", &["xlsx"])
                 .pick_file(|path_buf|{
                     if let Some(path) = path_buf{
-                        if DATABASE.lock().unwrap().is_none(){
-                            // Load excel database
-                            thread::spawn(||{
-                                let mut document: Xlsx<_> = open_workbook(path).unwrap();
+                        unsafe{
+                            if DATABASE.lock().unwrap().is_none(){
+                                // Load excel database
+                                thread::spawn(||{
+                                    let mut document: Xlsx<_> = open_workbook(path).unwrap();
 
-                                if let Some(Ok(sheet)) = document.worksheet_range_at(0){
-                                    *DATABASE.lock().unwrap() = Some(sheet);
-                                }
-                            });
+                                    if let Some(Ok(sheet)) = document.worksheet_range_at(0){
+                                        *DATABASE.lock().unwrap() = Some(sheet);
+                                    }
+                                });
+                            }
                         }
                     }
                 })
@@ -137,7 +178,7 @@ async fn main(){
             _ =>{}
         }
     })
-    .invoke_handler(tauri::generate_handler![get_product])
+    .invoke_handler(tauri::generate_handler![get_product, write_product])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");
 }

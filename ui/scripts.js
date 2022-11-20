@@ -17,3 +17,25 @@ function fetchProduct(){
 			}
 	})
 }
+
+function writeProduct(){
+	const { invoke } = window.__TAURI__.tauri
+
+	var payload = JSON.parse('[]');
+	payload.push(document.getElementById("productLot").value);
+	payload.push(document.getElementById("productName").innerHTML);
+	payload.push(document.getElementById("productDescription").innerHTML);
+	payload.push(document.getElementById("productCondition").value);
+	payload.push(document.getElementById("productVendor").value);
+	payload.push("1");
+	payload.push("3");
+	payload.push(document.getElementById("productCategory").value);
+	payload.push(document.getElementById("productMsrp").innerHTML);
+
+	invoke('write_product', { information: payload })
+		.then((result) =>{
+			if (result != null){
+				document.getElementById("productLot").value += 1; 
+			}
+	})
+}
