@@ -6,38 +6,37 @@
 use scraper::{Html, Selector};
 use calamine::{Range, Xlsx, open_workbook, Reader, DataType};
 use std::io::Read;
-use std::sync::Mutex;
+use std::sync::{Mutex, mpsc};
 use tauri::api::dialog;
 use tauri::{CustomMenuItem, Menu, Submenu};
 use std::thread;
 use std::fs::OpenOptions;
 use std::io::Write;
+use std::path::Path;
 
-static mut DATABASE: Mutex<Option<Range<DataType>>> = Mutex::new(None);
-static mut OUTPUT_PATH: Mutex<Option<String>> = Mutex::new(None);
+static DATABASE: Mutex<Option<Range<DataType>>> = Mutex::new(None);
+static mut OUTPUT_PATH: Option<String> = None;
 
 fn lookup_product(lpn: &str)-> Result<String, ()>{
-    unsafe{
-        let mut asin = String::new();
+    let mut asin = String::new();
 
-        let sheet = (*DATABASE.lock().unwrap()).clone().unwrap();
-        let lpn_idx = (0..sheet.width()).find(|idx| sheet.get((0, *idx)).unwrap() == "LPN").unwrap();
-        let asin_idx = (0..sheet.width()).find(|idx| sheet.get((0, *idx)).unwrap() == "Asin").unwrap();
+    let sheet = (*DATABASE.lock().unwrap()).clone().unwrap();
+    let lpn_idx = (0..sheet.width()).find(|idx| sheet.get((0, *idx)).unwrap() == "LPN").unwrap();
+    let asin_idx = (0..sheet.width()).find(|idx| sheet.get((0, *idx)).unwrap() == "Asin").unwrap();
 
-        for row in sheet.rows(){
-             let curr = row[lpn_idx].to_string();
-             if curr == lpn{
-                 asin = row[asin_idx].to_string();
-                 break;
-             }
-        }
+    for row in sheet.rows(){
+         let curr = row[lpn_idx].to_string();
+         if curr == lpn{
+             asin = row[asin_idx].to_string();
+             break;
+         }
+    }
 
-        if asin.is_empty(){
-            Err(())
-        }
-        else{
-            Ok(asin)
-        }
+    if asin.is_empty(){
+        Err(())
+    }
+    else{
+        Ok(asin)
     }
 }
 
@@ -90,55 +89,65 @@ fn scrape_data(body: &str)-> Result<[String; 4], ()>{
 
 #[tauri::command]
 async fn get_product(lpn: String)-> Option<[String; 4]>{
-    unsafe{
-        if DATABASE.lock().unwrap().is_some(){
-            if let Ok(asin) = lookup_product(&lpn){
-                if let Ok(body) = reqwest::get(format!("https://amazon.com/dp/{}", asin))
-                    .await.unwrap().text().await{
-                    if let Ok(data) = scrape_data(&body){
-                        return Some(data);
-                    }
+    if DATABASE.lock().unwrap().is_some(){
+        if let Ok(asin) = lookup_product(&lpn){
+            if let Ok(body) = reqwest::get(format!("https://amazon.com/dp/{}", asin))
+                .await.unwrap().text().await{
+                if let Ok(data) = scrape_data(&body){
+                    return Some(data);
                 }
             }
         }
-
-        None
     }
+
+    None
 }
 
 #[tauri::command]
 async fn write_product(information: [String; 9])-> Option<()>{
     unsafe{
-        if (*OUTPUT_PATH.lock().unwrap()).is_none(){
+        if OUTPUT_PATH.is_some() && !Path::new(&OUTPUT_PATH.clone().unwrap()).exists(){
+            OUTPUT_PATH = None;
+        }
+
+        let (tx, rx) = mpsc::channel();
+        if OUTPUT_PATH.is_none(){
             dialog::FileDialogBuilder::default()
             .add_filter("", &["csv"])
-            .pick_file(|path_buf|{
+            .pick_file(move |path_buf|{
                 if let Some(path) = path_buf{
-                    *OUTPUT_PATH.lock().unwrap() = Some(path.into_os_string().into_string().unwrap());
+                    OUTPUT_PATH = Some(path.into_os_string().into_string().unwrap());
                 }
+                tx.send(true).unwrap();
             })
         }
-
-        while (*OUTPUT_PATH.lock().unwrap()).is_none(){}
-        let mut handle = OpenOptions::new()
-            .read(true)
-            .write(true)
-            .open((*OUTPUT_PATH.lock().unwrap()).clone().unwrap())
-            .unwrap();
-
-        let mut buf = String::new();
-        handle.read_to_string(&mut buf).unwrap();
-
-        if !buf.contains('\n'){
-            let header = String::from("Lot,Lead,Description 1,Description 2/Condition,Vendor,Shipping,Min Bid,Category,MSRP\n");
-            handle.write_all(header.as_bytes()).unwrap();
+        else{
+            tx.send(true).unwrap();
         }
 
-        for field in information{
-            handle.write_all((field + ",").as_bytes()).unwrap();
-        }
+        rx.recv().unwrap();
 
-        handle.write_all("\n".as_bytes()).unwrap();
+        if let Some(path) = OUTPUT_PATH.clone(){
+            let mut handle = OpenOptions::new()
+                .read(true)
+                .write(true)
+                .open(path)
+                .unwrap();
+
+            let mut buf = String::new();
+            handle.read_to_string(&mut buf).unwrap();
+
+            if !buf.contains('\n'){
+                let header = String::from("Lot,Lead,Description 1,Description 2/Condition,Vendor,Shipping,Min Bid,Category,MSRP\n");
+                handle.write_all(header.as_bytes()).unwrap();
+            }
+
+            for field in information{
+                handle.write_all(("\"".to_owned() + &field + "\",").as_bytes()).unwrap();
+            }
+
+            handle.write_all("\n".as_bytes()).unwrap();
+        }
 
         Some(())
     }
@@ -146,8 +155,10 @@ async fn write_product(information: [String; 9])-> Option<()>{
 
 #[tokio::main]
 async fn main(){
-    let spreadsheet = CustomMenuItem::new("spreadsheet".to_string(), "Spreadsheet");
-    let submenu = Submenu::new("Import", Menu::new().add_item(spreadsheet));
+    let spreadsheet = CustomMenuItem::new("input".to_string(), "Input Spreadsheet");
+    let csv = CustomMenuItem::new("output".to_string(), "Output Spreadsheet");
+    let submenu = Submenu::new("Import", Menu::new().add_item(spreadsheet).add_item(csv));
+
     let menu = Menu::new()
         .add_submenu(submenu);
 
@@ -155,22 +166,31 @@ async fn main(){
     .menu(menu)
     .on_menu_event(|event|{
         match event.menu_item_id(){
-            "spreadsheet" =>{
+            "input" =>{
                 dialog::FileDialogBuilder::default()
                 .add_filter("", &["xlsx"])
                 .pick_file(|path_buf|{
                     if let Some(path) = path_buf{
-                        unsafe{
-                            if DATABASE.lock().unwrap().is_none(){
-                                // Load excel database
-                                thread::spawn(||{
-                                    let mut document: Xlsx<_> = open_workbook(path).unwrap();
+                        if DATABASE.lock().unwrap().is_none(){
+                            // Load excel database
+                            thread::spawn(||{
+                                let mut document: Xlsx<_> = open_workbook(path).unwrap();
 
-                                    if let Some(Ok(sheet)) = document.worksheet_range_at(0){
-                                        *DATABASE.lock().unwrap() = Some(sheet);
-                                    }
-                                });
-                            }
+                                if let Some(Ok(sheet)) = document.worksheet_range_at(0){
+                                    *DATABASE.lock().unwrap() = Some(sheet);
+                                }
+                            });
+                        }
+                    }
+                })
+            }
+            "output" =>{
+                dialog::FileDialogBuilder::default()
+                .add_filter("", &["csv"])
+                .pick_file(|path_buf|{
+                    if let Some(path) = path_buf{
+                        unsafe{
+                            OUTPUT_PATH = Some(path.into_os_string().into_string().unwrap());
                         }
                     }
                 })
