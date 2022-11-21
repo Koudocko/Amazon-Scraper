@@ -8,7 +8,6 @@
   </head>
   <body>
     <script src="scripts.js"></script>
-    <!-- <div class="foreground" style="position: fixed; top: 55px; height: 100%; width: 100%; z-index: 1;"></div> -->
 
     <span>
       <button class="foreground button" onClick="fetchProduct()">Fetch Product</button>
@@ -26,25 +25,25 @@
     </span>
 
     <div class="container" style="position: relative; top: 10px">
-      <img id="productImage" src="https://i.guim.co.uk/img/media/fe1e34da640c5c56ed16f76ce6f994fa9343d09d/0_174_3408_2046/master/3408.jpg?width=1200&height=1200&quality=85&auto=format&fit=crop&s=67773a9d419786091c958b2ad08eae5e" alt="None" height="250px">
+      <img id="productImage" src="img/dotdotdot.jpg" alt="None" height="250px">
       <span style="position: relative; top: 10px; left: 10px; color: var(--foreground); font-size: 15px;">
         Description: <span id="productDescription"></span>
       </span>
       </div>
     </div>
 
-    <div class="container" style="position: relative; top: 20px; text-align: center;">
+    <div class="container" style="position: relative; top: 20px; text-align: center; align-items: center;">
       <div class="foreground">
         Name: <span id="productName"></span>
-      </div>
-      <div class="foreground">
-        MSRP: <span id="productMsrp"></span>
       </div>
       <div class="foreground">LOT#
         <input class="foreground" id="productLot" type="number" min="0" size="5" value="0">
       </div>
+      <div class="foreground">
+        MSRP: <span id="productMsrp"></span>
+      </div>
     </div>
-    <div class="container" style="position: relative; top: 30px; text-align: center;">
+    <div class="container" style="position: relative; top: 30px; text-align: center; align-items: center;">
       <div class="foreground" >
         <select class="foreground" id="productVendor">
           <option value="0">Vendor: </option>
@@ -84,6 +83,14 @@
       </div>
     </div>
 
-    <button class="foreground button" id="csvButton" style="position: relative; top: 40px;" onclick="writeProduct()">Write to CSV</button>
+    <div class="container" style="position: relative; top: 40px; text-align: center; align-items: center; justify-content: center">
+      <div class="foreground">
+        Input State: <span id="inputState" style="color: var(--bad);">Not Loaded!</span>
+      </div>
+      <button class="foreground button" id="csvButton" onclick="writeProduct()">Write to CSV</button>
+      <div class="foreground">
+        Output State: <span id="outputState" style="color: var(--bad);">Not Loaded!</span>
+      </div>
+    </div>
   </body>
 </html>

@@ -11,7 +11,7 @@ function fetchProduct(){
 			}
 			else{
 				document.getElementById("productName").innerHTML = "None";
-				document.getElementById("productImage").setAttribute("src", "https://i.guim.co.uk/img/media/fe1e34da640c5c56ed16f76ce6f994fa9343d09d/0_174_3408_2046/master/3408.jpg?width=1200&height=1200&quality=85&auto=format&fit=crop&s=67773a9d419786091c958b2ad08eae5e");
+				document.getElementById("productImage").setAttribute("src", "img/dotdotdot.jpg");
 				document.getElementById("productDescription").innerHTML = "None";
 				document.getElementById("productMsrp").innerHTML = "None";
 			}
@@ -38,7 +38,8 @@ function writeProduct(){
 	invoke('write_product', { information: payload })
 		.then((result) =>{
 			if (result != null){
-				document.getElementById("productLot").value += 1; 
+				var val = document.getElementById("productLot").value; 
+				document.getElementById("productLot").setAttribute("value", (parseInt(val) + 1).toString());
 			}
 	})
 }

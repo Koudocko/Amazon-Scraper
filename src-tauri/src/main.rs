@@ -8,7 +8,7 @@ use calamine::{Range, Xlsx, open_workbook, Reader, DataType};
 use std::io::Read;
 use std::sync::{Mutex, mpsc};
 use tauri::api::dialog;
-use tauri::{CustomMenuItem, Menu, Submenu};
+use tauri::{CustomMenuItem, Menu, Submenu, Window, Manager};
 use std::thread;
 use std::fs::OpenOptions;
 use std::io::Write;
@@ -16,6 +16,7 @@ use std::path::Path;
 
 static DATABASE: Mutex<Option<Range<DataType>>> = Mutex::new(None);
 static mut OUTPUT_PATH: Option<String> = None;
+static mut WINDOW: Option<Window> = None;
 
 fn lookup_product(lpn: &str)-> Result<String, ()>{
     let mut asin = String::new();
@@ -104,7 +105,7 @@ async fn get_product(lpn: String)-> Option<[String; 4]>{
 }
 
 #[tauri::command]
-async fn write_product(information: [String; 9])-> Option<()>{
+async fn write_product(information: [String; 9])-> Option<bool>{
     unsafe{
         if OUTPUT_PATH.is_some() && !Path::new(&OUTPUT_PATH.clone().unwrap()).exists(){
             OUTPUT_PATH = None;
@@ -147,9 +148,22 @@ async fn write_product(information: [String; 9])-> Option<()>{
             }
 
             handle.write_all("\n".as_bytes()).unwrap();
-        }
 
-        Some(())
+            WINDOW.clone().unwrap().eval(r#"
+                var div = document.getElementById("outputState");
+                div.style.color = 'var(--good)';
+                div.innerHTML = "Loaded.";
+            "#).unwrap();
+            Some(true)
+        }
+        else{
+            WINDOW.clone().unwrap().eval(r#"
+                var div = document.getElementById("outputState");
+                div.style.color = 'var(--bad)';
+                div.innerHTML = "Not Loaded...";
+            "#).unwrap();
+            None
+        }
     }
 }
 
@@ -164,33 +178,60 @@ async fn main(){
 
     tauri::Builder::default()
     .menu(menu)
+    .setup(|app|{
+        unsafe{
+            WINDOW = Some(app.get_window("main").unwrap());
+        }
+        Ok(())
+    })
     .on_menu_event(|event|{
         match event.menu_item_id(){
             "input" =>{
                 dialog::FileDialogBuilder::default()
                 .add_filter("", &["xlsx"])
-                .pick_file(|path_buf|{
+                .pick_file(move |path_buf|{
                     if let Some(path) = path_buf{
-                        if DATABASE.lock().unwrap().is_none(){
-                            // Load excel database
-                            thread::spawn(||{
-                                let mut document: Xlsx<_> = open_workbook(path).unwrap();
+                        event.window().eval(r#"
+                            var div = document.getElementById("inputState");
+                            div.style.color = 'var(--warning)';
+                            div.innerHTML = "Loading...";
+                        "#).unwrap();
+                        thread::spawn(move ||{
+                            let mut document: Xlsx<_> = open_workbook(path).unwrap();
 
-                                if let Some(Ok(sheet)) = document.worksheet_range_at(0){
-                                    *DATABASE.lock().unwrap() = Some(sheet);
-                                }
-                            });
-                        }
+                            if let Some(Ok(sheet)) = document.worksheet_range_at(0){
+                                *DATABASE.lock().unwrap() = Some(sheet);
+                                event.window().eval(r#"
+                                    div.style.color = 'var(--good)';
+                                    div.innerHTML = "Loaded.";
+                                "#).unwrap();
+                            }
+                            else{
+                                event.window().eval(r#"
+                                    div.style.color = 'var(--bad)';
+                                    div.innerHTML = "Not Loaded!";
+                                "#).unwrap();
+                            }
+                        });
                     }
                 })
             }
             "output" =>{
                 dialog::FileDialogBuilder::default()
                 .add_filter("", &["csv"])
-                .pick_file(|path_buf|{
+                .pick_file(move |path_buf|{
                     if let Some(path) = path_buf{
+                        event.window().eval(r#"
+                            var div = document.getElementById("outputState");
+                            div.style.color = 'var(--warning)';
+                            div.innerHTML = "Loading...";
+                        "#).unwrap();
                         unsafe{
                             OUTPUT_PATH = Some(path.into_os_string().into_string().unwrap());
+                            event.window().eval(r#"
+                                div.style.color = 'var(--good)';
+                                div.innerHTML = "Loaded.";
+                            "#).unwrap();
                         }
                     }
                 })
