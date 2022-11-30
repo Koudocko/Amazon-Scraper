@@ -105,7 +105,7 @@ async fn get_product(lpn: String)-> Option<[String; 4]>{
 }
 
 #[tauri::command]
-async fn write_product(information: [String; 9])-> Option<bool>{
+async fn write_product(information: [String; 10])-> Option<bool>{
     unsafe{
         if OUTPUT_PATH.is_some() && !Path::new(&OUTPUT_PATH.clone().unwrap()).exists(){
             OUTPUT_PATH = None;
@@ -139,12 +139,12 @@ async fn write_product(information: [String; 9])-> Option<bool>{
             handle.read_to_string(&mut buf).unwrap();
 
             if !buf.contains('\n'){
-                let header = String::from("Lot,Lead,Description 1,Description 2/Condition,Vendor,Shipping,Min Bid,Category,MSRP\n");
+                let header = String::from("Lot,Lead,Description,Condition,Vendor,Shipping,Min Bid,Category,MSRP\n");
                 handle.write_all(header.as_bytes()).unwrap();
             }
 
-            for field in information{
-                handle.write_all(("\"".to_owned() + &field + "\",").as_bytes()).unwrap();
+            for field in 0..9{
+                handle.write_all(("\"".to_owned() + &information[field] + "\",").as_bytes()).unwrap();
             }
 
             handle.write_all("\n".as_bytes()).unwrap();
@@ -154,6 +154,20 @@ async fn write_product(information: [String; 9])-> Option<bool>{
                 div.style.color = 'var(--good)';
                 div.innerHTML = "Loaded.";
             "#).unwrap();
+
+            if let Ok(img) = reqwest::get(&information[9]).await{
+                let img = img.bytes().await.unwrap();
+                let img = image::load_from_memory(&img);
+
+                let path = OUTPUT_PATH.clone().unwrap();
+                let parent_path = std::path::Path::new(&path)
+                    .parent().unwrap();
+                img.unwrap().save_with_format(
+                    parent_path.join("LOT".to_owned() + &information[0] + ".jpg"), 
+                    image::ImageFormat::Jpeg
+                ).unwrap();
+            }
+
             Some(true)
         }
         else{
@@ -179,9 +193,7 @@ async fn main(){
     tauri::Builder::default()
     .menu(menu)
     .setup(|app|{
-        unsafe{
-            WINDOW = Some(app.get_window("main").unwrap());
-        }
+        unsafe{ WINDOW = Some(app.get_window("main").unwrap()); }
         Ok(())
     })
     .on_menu_event(|event|{
