@@ -34,6 +34,8 @@ function writeProduct(){
 	temp = document.getElementById("productCategory");
 	payload.push(temp.options[temp.selectedIndex].text);
 	payload.push(document.getElementById("productMsrp").innerHTML);
+	temp = document.getElementById("productImage");
+	payload.push(temp.getAttribute("src"));
 
 	invoke('write_product', { information: payload })
 		.then((result) =>{

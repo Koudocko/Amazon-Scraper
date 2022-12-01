@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -7,24 +8,90 @@
     <title>Document</title>
   </head>
   <body>
-    <button class="foreground button" onClick="fetchProduct()">what Product</button>
-    <input class="foreground" type="text" id="lpnInput">
-    <nav style="padding-top: 10px; padding-bottom: 10px; border-radius: 5px; float: right; background-color: var(--element_dark)">
-      <a style="border-bottom-right-radius: 0px; border-top-right-radius: 0px; text-decoration: none;" class="foreground button" href="index.html">LPN Lookup</a>
-      <a style="border-bottom-left-radius: 0px; border-top-left-radius: 0px; background-color: var(--highlight); text-decoration: none;"class="foreground button" href="name_lookup.html">Name Lookup</a>
-    </nav>
-    <h1 class="foreground" id="productName">Product Name</h1>
-    <img class="foreground" id="productImage">
-    <script>
-      const { invoke } = window.__TAURI__.tauri 
+    <script src="scripts.js"></script>
 
-      function fetchProduct(){
-        invoke('get_product', { lpn: document.getElementById("lpnInput").value })
-          .then((data) =>{
-            document.getElementById("productName").innerHTML = data[0];
-            document.getElementById("productImage").setAttribute("src", data[1]);
-        })
-      }
-    </script>
+    <span>
+      <button class="foreground button" onClick="findProduct()">Find Product</button>
+      <span class="foreground">Name: <input class="foreground" id="nameInput" type="text" size="13"></span>
+      <nav style="padding-top: 10px; padding-bottom: 10px; border-radius: 5px; float: right; background-color: var(--element_dark)">
+        <a class="foreground button" href="index.html" 
+        style="border-bottom-right-radius: 0px; border-top-right-radius: 0px; text-decoration: none;">
+          LPN Lookup
+        </a>
+        <a class="foreground button" href="name_lookup.html" 
+        style="border-bottom-left-radius: 0px; border-top-left-radius: 0px; background-color: var(--highlight); text-decoration: none;">
+          Name Lookup
+        </a>
+      </nav>
+    </span>
+
+    <div class="container" style="position: relative; top: 10px">
+      <img id="productImage" src="img/dotdotdot.jpg" alt="None" height="250px">
+      <span style="position: relative; top: 10px; left: 10px; color: var(--foreground); font-size: 15px;">
+        Description: <span id="productDescription"></span>
+      </span>
+      </div>
+    </div>
+
+    <div class="container" style="position: relative; top: 20px; text-align: center; align-items: center;">
+      <div class="foreground">
+        Name: <span id="productName"></span>
+      </div>
+      <div class="foreground">LOT#
+        <input class="foreground" id="productLot" type="number" min="0" size="5" value="0">
+      </div>
+      <div class="foreground">
+        MSRP: <span id="productMsrp"></span>
+      </div>
+    </div>
+    <div class="container" style="position: relative; top: 30px; text-align: center; align-items: center;">
+      <div class="foreground" >
+        <select class="foreground" id="productVendor">
+          <option value="0">Vendor: </option>
+          <option value="1">F2653</option>
+          <option value="2">F2654</option>
+          <option value="3">AMZN2-F2530</option>
+          <option value="4">AMZN6-F2730</option>
+          <option value="5">AMZN3</option>
+        </select>
+      </div>
+      <div class="foreground">
+        <select class="foreground" id="productCondition">
+          <option value="0">Condition: </option>
+          <option value="1">New, Factory Sealed</option>
+          <option value="2">New, Distressed Packaging</option>
+          <option value="3">New, Open Box</option>
+          <option value="4">No-Box</option>
+          <option value="5">Open Box</option>
+          <option value="6">New</option>
+        </select>
+      </div>
+      <div class="foreground">
+        <select class="foreground" id="productCategory">
+          <option value="0">Category: </option>
+          <option value="1">HW</option>
+          <option value="2">PT</option>
+          <option value="3">FB</option>
+          <option value="4">AP</option>
+          <option value="5">PH</option>
+          <option value="6">EL</option>
+          <option value="7">BY</option>
+          <option value="8">BB</option>
+          <option value="9">SC</option>
+          <option value="10">V</option>
+          <option value="11">TY</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="container" style="position: relative; top: 40px; text-align: center; align-items: center; justify-content: center">
+      <div class="foreground">
+        Input State: <span id="inputState" style="color: var(--bad);">Not Loaded!</span>
+      </div>
+      <button class="foreground button" id="csvButton" onclick="writeProduct()">Write to CSV</button>
+      <div class="foreground">
+        Output State: <span id="outputState" style="color: var(--bad);">Not Loaded!</span>
+      </div>
+    </div>
   </body>
 </html>
