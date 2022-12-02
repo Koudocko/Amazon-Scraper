@@ -3,42 +3,40 @@
   windows_subsystem = "windows"
 )]
 
-use scraper::{Html, Selector};
 use calamine::{Range, Xlsx, open_workbook, Reader, DataType};
-use std::io::Read;
-use std::sync::{Mutex, mpsc};
-use tauri::api::dialog;
 use tauri::{CustomMenuItem, Menu, Submenu, Window, Manager};
-use std::thread;
+use fuzzy_matcher::skim::SkimMatcherV2;
+use std::collections::LinkedList;
+use fuzzy_matcher::FuzzyMatcher;
+use scraper::{Html, Selector};
+use std::sync::{Mutex, mpsc};
 use std::fs::OpenOptions;
-use std::io::Write;
+use tauri::api::dialog;
 use std::path::Path;
+use std::io::Write;
+use std::io::Read;
+use std::thread;
 
-static DATABASE: Mutex<Option<Range<DataType>>> = Mutex::new(None);
+static BROKEN_ENTRIES: Mutex<Vec<(String, String)>> = Mutex::new(Vec::new());
+static DATABASE: Mutex<Vec<Range<DataType>>> = Mutex::new(Vec::new());
 static mut OUTPUT_PATH: Option<String> = None;
 static mut WINDOW: Option<Window> = None;
 
 fn lookup_product(lpn: &str)-> Result<String, ()>{
-    let mut asin = String::new();
+    let sheets = (*DATABASE.lock().unwrap()).clone();
+    for sheet in sheets{
+        let lpn_idx = (0..sheet.width()).find(|idx| sheet.get((0, *idx)).unwrap() == "LPN").unwrap();
+        let asin_idx = (0..sheet.width()).find(|idx| sheet.get((0, *idx)).unwrap() == "Asin").unwrap();
 
-    let sheet = (*DATABASE.lock().unwrap()).clone().unwrap();
-    let lpn_idx = (0..sheet.width()).find(|idx| sheet.get((0, *idx)).unwrap() == "LPN").unwrap();
-    let asin_idx = (0..sheet.width()).find(|idx| sheet.get((0, *idx)).unwrap() == "Asin").unwrap();
-
-    for row in sheet.rows(){
-         let curr = row[lpn_idx].to_string();
-         if curr == lpn{
-             asin = row[asin_idx].to_string();
-             break;
-         }
+        for row in sheet.rows(){
+             let curr = row[lpn_idx].to_string();
+             if curr == lpn{
+                 return Ok(row[asin_idx].to_string());
+             }
+        }
     }
 
-    if asin.is_empty(){
-        Err(())
-    }
-    else{
-        Ok(asin)
-    }
+    Err(())
 }
 
 fn scrape_data(body: &str)-> Result<[String; 4], ()>{
@@ -89,8 +87,48 @@ fn scrape_data(body: &str)-> Result<[String; 4], ()>{
 }
 
 #[tauri::command]
+async fn find_product(name: String){
+    let mut guard = BROKEN_ENTRIES.lock().unwrap();
+    if guard.is_empty(){
+        let sheets = (*DATABASE.lock().unwrap()).clone();
+        for sheet in sheets{
+            let lpn_idx = (0..sheet.width()).find(|idx| sheet.get((0, *idx)).unwrap() == "LPN").unwrap();
+            let name_idx = (0..sheet.width()).find(|idx| sheet.get((0, *idx)).unwrap() == "ItemDesc").unwrap();
+            let asin_idx = (0..sheet.width()).find(|idx| sheet.get((0, *idx)).unwrap() == "Asin").unwrap();
+
+            for row in sheet.rows(){
+                let curr = row[lpn_idx].to_string();
+                if curr.is_empty(){
+                    guard.push(
+                         (row[name_idx].to_string(),
+                         row[asin_idx].to_string())
+                    );
+                }
+            }
+        }
+    }
+    else{
+        let matches: LinkedList<(String, i32)> = LinkedList::new();
+
+        let matcher = SkimMatcherV2::default();
+        
+        for broken_entry in guard.clone(){
+            let mut idx = -1;
+
+            for ele in &matches{
+                if let Some(val) = matcher.fuzzy_match(&broken_entry.0, &name){
+                    if val > ele.1 as i64{
+                        idx += 1;
+                    }
+                }
+            }
+        }
+    }
+}
+
+#[tauri::command]
 async fn get_product(lpn: String)-> Option<[String; 4]>{
-    if DATABASE.lock().unwrap().is_some(){
+    if !DATABASE.lock().unwrap().is_empty(){
         if let Ok(asin) = lookup_product(&lpn){
             if let Ok(body) = reqwest::get(format!("https://amazon.com/dp/{}", asin))
                 .await.unwrap().text().await{
@@ -212,7 +250,7 @@ async fn main(){
                             let mut document: Xlsx<_> = open_workbook(path).unwrap();
 
                             if let Some(Ok(sheet)) = document.worksheet_range_at(0){
-                                *DATABASE.lock().unwrap() = Some(sheet);
+                                DATABASE.lock().unwrap().push(sheet);
                                 event.window().eval(r#"
                                     div.style.color = 'var(--good)';
                                     div.innerHTML = "Loaded.";
