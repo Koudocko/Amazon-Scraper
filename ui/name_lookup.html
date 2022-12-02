@@ -10,6 +10,9 @@
   <body>
     <script src="scripts.js"></script>
 
+    <div id="searchResults" style="height:240px;width:320px;overflow:scroll;">
+    </div>
+
     <span>
       <button class="foreground button" onClick="findProduct()">Find Product</button>
       <span class="foreground">Name: <input class="foreground" id="nameInput" type="text" size="13"></span>
@@ -93,5 +96,7 @@
         Output State: <span id="outputState" style="color: var(--bad);">Not Loaded!</span>
       </div>
     </div>
+
+
   </body>
 </html>

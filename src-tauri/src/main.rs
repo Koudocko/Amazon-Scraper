@@ -4,10 +4,11 @@
 )]
 
 use calamine::{Range, Xlsx, open_workbook, Reader, DataType};
+use futures::FutureExt;
 use tauri::{CustomMenuItem, Menu, Submenu, Window, Manager};
 use fuzzy_matcher::skim::SkimMatcherV2;
-use std::collections::LinkedList;
 use fuzzy_matcher::FuzzyMatcher;
+use futures::future::join_all;
 use scraper::{Html, Selector};
 use std::sync::{Mutex, mpsc};
 use std::fs::OpenOptions;
@@ -77,7 +78,7 @@ fn scrape_data(body: &str)-> Result<[String; 4], ()>{
         product[3] = msrp.inner_html().trim().to_owned();
         
     }
-
+    
     if product[0].is_empty(){
         Err(())
     }
@@ -87,11 +88,10 @@ fn scrape_data(body: &str)-> Result<[String; 4], ()>{
 }
 
 #[tauri::command]
-async fn find_product(name: String){
-    let mut guard = BROKEN_ENTRIES.lock().unwrap();
-    if guard.is_empty(){
-        let sheets = (*DATABASE.lock().unwrap()).clone();
-        for sheet in sheets{
+async fn find_product(name: String)-> Vec<[String; 3]>{
+    let (mut broken_guard, db_guard) = (BROKEN_ENTRIES.lock().unwrap(), DATABASE.lock().unwrap());
+    if broken_guard.is_empty() && !db_guard.is_empty(){
+        for sheet in db_guard.clone(){
             let lpn_idx = (0..sheet.width()).find(|idx| sheet.get((0, *idx)).unwrap() == "LPN").unwrap();
             let name_idx = (0..sheet.width()).find(|idx| sheet.get((0, *idx)).unwrap() == "ItemDesc").unwrap();
             let asin_idx = (0..sheet.width()).find(|idx| sheet.get((0, *idx)).unwrap() == "Asin").unwrap();
@@ -99,7 +99,7 @@ async fn find_product(name: String){
             for row in sheet.rows(){
                 let curr = row[lpn_idx].to_string();
                 if curr.is_empty(){
-                    guard.push(
+                    broken_guard.push(
                          (row[name_idx].to_string(),
                          row[asin_idx].to_string())
                     );
@@ -107,23 +107,33 @@ async fn find_product(name: String){
             }
         }
     }
-    else{
-        let matches: LinkedList<(String, i32)> = LinkedList::new();
 
-        let matcher = SkimMatcherV2::default();
-        
-        for broken_entry in guard.clone(){
-            let mut idx = -1;
+    let mut matches: Vec<(String, i32)> = Vec::new();
+    let matcher = SkimMatcherV2::default();
+    
+    for broken_entry in broken_guard.clone(){
+        let mut idx = 0;
 
-            for ele in &matches{
-                if let Some(val) = matcher.fuzzy_match(&broken_entry.0, &name){
-                    if val > ele.1 as i64{
+        if let Some(val) = matcher.fuzzy_match(&broken_entry.0, &name){
+            if val >= 100{
+                for ele in &matches{
+                    if val < ele.1 as i64{
                         idx += 1;
                     }
                 }
+
+                matches.insert(idx, (broken_entry.1.clone(), val as i32));
             }
         }
+
     }
+    
+    let requests = join_all(matches.into_iter().map(|ele|{
+        reqwest::get(format!("https://amazon.com/dp/{}", ele.0))
+    }).collect::<Vec<_>>());
+
+   let v = Vec::<[String; 3]>::new();
+   v
 }
 
 #[tauri::command]
@@ -289,7 +299,7 @@ async fn main(){
             _ =>{}
         }
     })
-    .invoke_handler(tauri::generate_handler![get_product, write_product])
+    .invoke_handler(tauri::generate_handler![get_product, write_product, find_product])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");
 }

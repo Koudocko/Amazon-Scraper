@@ -45,3 +45,26 @@ function writeProduct(){
 			}
 	})
 }
+
+function findProduct(){
+	const { invoke } = window.__TAURI__.tauri
+
+	var div = document.getElementById("searchResults");
+	div.innerHTML = "";
+
+	invoke('find_product', { name: document.getElementById("nameInput").value  })
+		.then((result) =>{
+			for (element of result){
+				invoke('get_product', { lpn: element })
+					.then((data) =>{
+						if data != null{
+							div.innerHTML += 
+							`<div class="container foreground">
+									<img height="100px" class="container" src="`
+								+ data[1] + '">' +
+								"<div>";
+						}
+				})
+			}
+	})
+}
