@@ -8,6 +8,7 @@ use tauri::{CustomMenuItem, Menu, Submenu, Window, Manager};
 use fuzzy_matcher::skim::SkimMatcherV2;
 use fuzzy_matcher::FuzzyMatcher;
 use scraper::{Html, Selector};
+use std::collections::HashSet;
 use std::sync::{Mutex, mpsc};
 use std::fs::OpenOptions;
 use tauri::api::dialog;
@@ -88,6 +89,7 @@ fn scrape_data(body: &str)-> Result<[String; 4], ()>{
 #[tauri::command]
 async fn find_product(name: String)-> Vec<[String; 3]>{
     let mut matches: Vec<(String, i32)> = Vec::new();
+    let mut duplicates = HashSet::new();
 
     {
         let (mut broken_guard, db_guard) = (BROKEN_ENTRIES.lock().unwrap(), DATABASE.lock().unwrap());
@@ -115,7 +117,10 @@ async fn find_product(name: String)-> Vec<[String; 3]>{
             let mut idx = 0;
 
             if let Some(val) = matcher.fuzzy_match(&broken_entry.0, &name){
-                if val >= 100{
+                if val >= 100 && duplicates.get(&val).is_none(){
+                    println!("found");
+                    duplicates.insert(val);
+
                     for ele in &matches{
                         if val < ele.1 as i64{
                             idx += 1;
