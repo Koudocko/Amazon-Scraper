@@ -87,7 +87,7 @@ fn scrape_data(body: &str)-> Result<[String; 4], ()>{
 }
 
 #[tauri::command]
-async fn find_product(name: String)-> Vec<[String; 3]>{
+async fn find_product(name: String)-> Vec<Vec<String>>{
     let mut matches: Vec<(String, i32)> = Vec::new();
     let mut duplicates = HashSet::new();
 
@@ -139,14 +139,13 @@ async fn find_product(name: String)-> Vec<[String; 3]>{
         tasks.push((request.0.to_owned(), tokio::spawn(reqwest::get(format!("https://amazon.com/dp/{}", request.0)))));
     }
 
-    let mut found_list = Vec::<[String; 3]>::new();
+    let mut found_list = Vec::<Vec<String>>::new();
     for task in tasks{
         if let Ok(body) = task.1.await.unwrap().unwrap().text().await{
             if let Ok(data) = scrape_data(&body){
-                let mut element: [String; 3] = Default::default();
-                element[0] = data[0].to_owned();
-                element[1] = data[1].to_owned();
-                element[2] = task.0;
+                let mut element = Vec::new();
+                element.extend(data);
+                element.push(task.0);
                 found_list.push(element);
             }
         }

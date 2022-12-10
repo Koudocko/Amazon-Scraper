@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -10,11 +9,18 @@
   <body>
     <script src="scripts.js"></script>
 
-    <div id="searchResults" style="height:240px;width:320px;overflow:scroll;">
+    <div id="searchResults" class="foreground search" style="height: 250px; width: 500px; overflow: scroll;">
+      <div class="container">
+        <img src="img/dotdotdot.jpg" style="height: 100px;">
+        <div>
+          <div>Name: <span>None</span></div>
+          <div>ASIN: <span>None</span></div>
+        </div>
+      </div>
     </div>
 
     <span>
-      <button class="foreground button" onClick="findProduct()">Find Product</button>
+      <button class="foreground button" onclick="findProduct()">Find Product</button>
       <span class="foreground">Name: <input class="foreground" id="nameInput" type="text" size="13"></span>
       <nav style="padding-top: 10px; padding-bottom: 10px; border-radius: 5px; float: right; background-color: var(--element_dark)">
         <a class="foreground button" href="index.html" 
@@ -96,7 +102,5 @@
         Output State: <span id="outputState" style="color: var(--bad);">Not Loaded!</span>
       </div>
     </div>
-
-
   </body>
 </html>
