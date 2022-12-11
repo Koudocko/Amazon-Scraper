@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<link rel="stylesheet"
+			href="background_styles.css">
+		<link rel="stylesheet" href="styles.css">
+		<title>Grid Example</title>
+	</head>
+	<body>
+		<div class="outer-grid">
+			<div class="inner-flex-1">
+				<button class="grid-item button" onClick="fetchProduct()">Fetch Product</button>
+				<div class="grid-item vertical-center">
+					LPN: <input id="lpnInput" class="grid-item input-box" size="13" maxlength="13"> 	
+				</div>
+			</div>
+			<div class="inner-flex-2">
+				<a class="grid-item vertical-center button inner-flex-2-1" href="lpn.html">LPN Lookup</a>
+				<a class="grid-item vertical-center button inner-flex-2-2 highlight-item" href="upc.html">UPC Lookup</a>
+				<a class="grid-item vertical-center button inner-flex-2-3" href="name.html">Name Lookup</a>
+			</div>
+			<div class="inner-grid-1">
+        <select class="grid-item input-box" id="productVendor">
+          <option value="0">Vendor: </option>
+          <option value="1">F2653</option>
+          <option value="2">F2654</option>
+          <option value="3">AMZN2-F2530</option>
+          <option value="4">AMZN6-F2730</option>
+          <option value="5">AMZN3</option>
+        </select>
+				<div class="grid-item inner-grid-1-flex-2 vertical-center">
+					<img class="inner-grid-1-2" src="../img/dotdotdot.jpg">
+				</div>
+        <select class="grid-item input-box" id="productCondition">
+          <option value="0">Condition: </option>
+          <option value="1">New, Factory Sealed</option>
+          <option value="2">New, Distressed Packaging</option>
+          <option value="3">New, Open Box</option>
+          <option value="4">No-Box</option>
+          <option value="5">Open Box</option>
+          <option value="6">New</option>
+        </select>
+        <select class="grid-item input-box" id="productCategory">
+          <option value="0">Category: </option>
+          <option value="1">HW</option>
+          <option value="2">PT</option>
+          <option value="3">FB</option>
+          <option value="4">AP</option>
+          <option value="5">PH</option>
+          <option value="6">EL</option>
+          <option value="7">BY</option>
+          <option value="8">BB</option>
+          <option value="9">SC</option>
+          <option value="10">V</option>
+          <option value="11">TY</option>
+        </select>
+			</div>
+			<div class="grid-item">
+				Description: <span id="productDescription"></span>
+			</div>
+			<div class="grid-item"></div>
+			<div class="inner-grid-2">
+				<div class="grid-item inner-grid-2-flex-1 vertical-center">
+					Name: <span id="productName"></span>
+				</div>
+				<div class="grid-item inner-grid-2-2">
+					Input States:
+				</div>
+				<div class="grid-item inner-grid-2-flex-1 vertical-center">
+					MSRP: <span id="productMSRP"></span>
+				</div>
+				<div class="grid-item inner-grid-2-flex-1 vertical-center">
+					ASIN: <span id="productASIN"></span>
+				</div>
+				<div class="grid-item vertical-center">
+					LOT# <input id="productLot" class="grid-item input-box" type="number" min="0" size="5" value="0">
+				</div>
+				<div class="grid-item vertical-center">
+					Output State: <span id="outputState" style="color: var(--bad)">Not Loaded!</span>
+				</div>
+			</div>
+		</div>
+	</body>
+</html>

@@ -1,52 +1,47 @@
 :root{
+	--element_light: #3C4046;
+	--element_dark: #2e3137;
 	--foreground: #d1c2e9;
 	--background: #1e2127;
-	--element_dark: #2e3137;
-	--element_light: #3C4046;
 	--highlight: #9061E1;
-	--good: #4DF747;
 	--warning: #F7F247;
+	--good: #4DF747;
 	--bad: #F74747;
+}
+
+*{
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
 }
 
 body{
 	background-color: var(--background);
-	white-space: nowrap;
+	margin: 2vh;
 }
 
-.defined_wrap{
-  white-space: nowrap; 
-  width: 5px; 
-  overflow: hidden;
-  text-overflow: ellipsis; 
-}
-
-.container{
-	display: flex;
-	width: 100%;
-}
-
-.container div{
-	flex: 1;
-}
-
-.search div:hover{
-	background-color: var(--element_light);
-}
-
-.foreground{
+.grid-item{
 	background-color: var(--element_dark);
 	color: var(--foreground);
-	border-width: 0px;
-	border-style: solid;
 	border-radius: 5px;
-	padding: 10px;
-	font-size: 15px;
+	border-width: 0;
+	font-size: 2vh;
+	padding: 15px;
+}
+
+.vertical-center{
+	align-items: center;
+	display: flex;
+	gap: 1ch;
+}
+
+.highlight-item{
+	background-color: var(--highlight);
 }
 
 .button{
 	transition-duration: 0.1s;
-	padding: 11px;
+	text-decoration: none;
 }
 
 .button:hover{
@@ -55,4 +50,75 @@ body{
 
 .button:active{
 	background-color: var(--highlight);
+}
+
+.input-box:hover{
+	background-color: var(--element_light);
+}
+
+.input-box:focus{
+	outline: none;
+}
+
+.outer-grid{
+	grid-template-rows: 1fr repeat(2, 5fr);
+	grid-template-columns: repeat(2, 1fr);
+	display: grid;
+	grid-gap: 2vh;
+	height: 96vh;
+}
+
+.inner-flex-1{
+	justify-content: start;
+	display: flex;
+	gap: 1.5vh;
+}
+
+.inner-flex-2{
+	justify-content: end;
+	display: flex;
+}
+
+.inner-grid-1{
+	grid-template-columns: repeat(2, 1fr);
+	grid-template-rows: repeat(3, 1fr);
+	grid-gap: 1.5vh;
+	display: grid;
+}
+
+.inner-grid-2{
+	grid-template-columns: repeat(2, 1fr);
+	grid-template-rows: repeat(4, 1fr);
+	grid-gap: 1.5vh;
+	display: grid;
+}
+
+.inner-flex-2-1{
+	border-bottom-right-radius: 0; 
+	border-top-right-radius: 0; 
+}
+
+.inner-flex-2-2{
+	border-bottom-right-radius: 0; 
+	border-bottom-left-radius: 0; 
+	border-top-right-radius: 0; 
+	border-top-left-radius: 0; 
+}
+
+.inner-flex-2-3{
+	border-bottom-left-radius: 0; 
+	border-top-left-radius: 0; 
+}
+
+.inner-grid-1-flex-2{
+	grid-row: span 3;
+}
+
+.inner-grid-1-2{
+	width: 100%;
+}
+
+.inner-grid-2-2{
+	grid-row: span 3;
+	overflow: scroll;
 }

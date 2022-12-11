@@ -21,6 +21,7 @@ static BROKEN_ENTRIES: Mutex<Vec<(String, String)>> = Mutex::new(Vec::new());
 static DATABASE: Mutex<Vec<Range<DataType>>> = Mutex::new(Vec::new());
 static mut OUTPUT_PATH: Option<String> = None;
 static mut WINDOW: Option<Window> = None;
+static mut INPUT_COUNT: i32 = 0;
 
 fn lookup_product(lpn: &str)-> Result<String, ()>{
     let sheets = (*DATABASE.lock().unwrap()).clone();
@@ -118,7 +119,6 @@ async fn find_product(name: String)-> Vec<Vec<String>>{
 
             if let Some(val) = matcher.fuzzy_match(&broken_entry.0, &name){
                 if val >= 100 && duplicates.get(&val).is_none(){
-                    println!("found");
                     duplicates.insert(val);
 
                     for ele in &matches{
@@ -269,26 +269,34 @@ async fn main(){
                 .add_filter("", &["xlsx"])
                 .pick_file(move |path_buf|{
                     if let Some(path) = path_buf{
-                        event.window().eval(r#"
-                            var div = document.getElementById("inputState");
-                            div.style.color = 'var(--warning)';
-                            div.innerHTML = "Loading...";
-                        "#).unwrap();
+                        event.window().eval(&(r#"
+                            var div = document.getElementById("inputStates");
+                            div.innerHTML += ""#.to_owned() 
+                            + path.file_name().unwrap().to_str().unwrap()
+                            + " | " + r#"<span id='inputState"#  + &unsafe{INPUT_COUNT}.to_string()
+                            + r#"' style='color: var(--warning);'>Loading...</span><br>";"#
+                        )).unwrap();
                         thread::spawn(move ||{
+                            let idx = unsafe{INPUT_COUNT};
                             let mut document: Xlsx<_> = open_workbook(path).unwrap();
 
                             if let Some(Ok(sheet)) = document.worksheet_range_at(0){
                                 DATABASE.lock().unwrap().push(sheet);
-                                event.window().eval(r#"
-                                    div.style.color = 'var(--good)';
-                                    div.innerHTML = "Loaded.";
-                                "#).unwrap();
+                                event.window().eval(&(r#"
+                                    var subDiv = document.getElementById("inputState"#.to_owned()
+                                    + &idx.to_string() + r#"");
+                                    subDiv.style.color = 'var(--good)';
+                                    subDiv.innerHTML = "Loaded.""#
+                                )).unwrap();
+                                unsafe{INPUT_COUNT += 1;}
                             }
                             else{
-                                event.window().eval(r#"
-                                    div.style.color = 'var(--bad)';
-                                    div.innerHTML = "Not Loaded!";
-                                "#).unwrap();
+                                event.window().eval(&(r#"
+                                    var subDiv = document.getElementById("inputState"#.to_owned()
+                                    + &idx.to_string() + r#"");
+                                    subDiv.style.color = 'var(--bad)';
+                                    subDiv.innerHTML = "Loading Failed!""#
+                                )).unwrap();
                             }
                         });
                     }

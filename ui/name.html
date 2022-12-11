@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<link rel="stylesheet" href="styles.css">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Amazon Scraper | Name Lookup</title>
+	</head>
+	<body>
+    <script src="scripts.js"></script>
+		<div class="outer-grid">
+			<div class="inner-flex-1">
+				<button class="grid-item button" onClick="findProduct()">Find Product</button>
+				<div class="grid-item vertical-center">
+					Name: <input id="nameInput" class="grid-item input-box" size="13" maxlength="13"> 	
+				</div>
+			</div>
+			<div class="inner-flex-2">
+				<a class="grid-item vertical-center button inner-flex-2-1" href="lpn.html">LPN Lookup</a>
+				<a class="grid-item vertical-center button inner-flex-2-2" href="upc.html">UPC Lookup</a>
+				<a class="grid-item vertical-center button inner-flex-2-3 highlight-item" href="name.html">Name Lookup</a>
+			</div>
+			<div class="inner-grid-1">
+        <select id="productVendor" class="grid-item input-box">
+          <option value="0">Vendor: </option>
+          <option value="1">F2653</option>
+          <option value="2">F2654</option>
+          <option value="3">AMZN2-F2530</option>
+          <option value="4">AMZN6-F2730</option>
+          <option value="5">AMZN3</option>
+        </select>
+				<div class="grid-item inner-grid-1-flex-2 vertical-center">
+					<img id="productImage" class="inner-grid-1-2" src="img/dotdotdot.jpg">
+				</div>
+        <select id="productCondition" class="grid-item input-box">
+          <option value="0">Condition: </option>
+          <option value="1">New, Factory Sealed</option>
+          <option value="2">New, Distressed Packaging</option>
+          <option value="3">New, Open Box</option>
+          <option value="4">No-Box</option>
+          <option value="5">Open Box</option>
+          <option value="6">New</option>
+        </select>
+        <select id="productCategory" class="grid-item input-box">
+          <option value="0">Category: </option>
+          <option value="1">HW</option>
+          <option value="2">PT</option>
+          <option value="3">FB</option>
+          <option value="4">AP</option>
+          <option value="5">PH</option>
+          <option value="6">EL</option>
+          <option value="7">BY</option>
+          <option value="8">BB</option>
+          <option value="9">SC</option>
+          <option value="10">V</option>
+          <option value="11">TY</option>
+        </select>
+			</div>
+			<div class="grid-item">
+				Description: <span id="productDescription"></span>
+			</div>
+			<div id="searchResults" class="grid-item" style="overflow: scroll;">
+<div class="container" onClick='fetchProduct(`["Scotch-Brite Non-Scratch Advanced Soap Control Dishwand, Leak-Free Guarantee, Long Lasting and Reusable","https://m.media-amazon.com/images/I/71iNGFtkBpL.__AC_SX300_SY300_QL70_ML2_.jpg","Valve prevents dish soap from leaking, no matter how the dishwand is stored ; Button allows for precise soap control, dispensing soap where and when needed ; Non-scratch cleaning power for everyday jobs ; Safe on: Non-stick cookware, countertops, tiles, showers and tubs and more ; Scrubbing fibers are made from 100% recycled content ; Soft-touch surface provides a non-slip grip ; ","$6.69","B07PB5NP63"]`)'><img style="height: 100px;" src="https://m.media-amazon.com/images/I/71iNGFtkBpL.__AC_SX300_SY300_QL70_ML2_.jpg"><div> 
+						<div>Name: <span>Scotch-Brite Non-Scratch Advanced Soap Control Dishwand, Leak-Free Guarantee, Long Lasting and Reusable<span></div>
+						<div>ASIN: <span>B07PB5NP63<span></div>
+					</div>
+				</div>
+			</div>
+			<div class="inner-grid-2">
+				<div class="grid-item inner-grid-2-flex-1 vertical-center">
+					Name: <span id="productName"></span>
+				</div>
+				<div id="inputStates" class="grid-item inner-grid-2-2">
+					Input States: <br>
+				</div>
+				<div class="grid-item inner-grid-2-flex-1 vertical-center">
+					MSRP: <span id="productMSRP"></span>
+				</div>
+				<div class="grid-item inner-grid-2-flex-1 vertical-center">
+					ASIN: <span id="productASIN"></span>
+				</div>
+				<div class="grid-item vertical-center">
+					LOT# <input id="productLOT" class="grid-item input-box" type="number" min="0" size="5" value="0">
+				</div>
+				<div class="grid-item vertical-center">
+					Output State: <span id="outputState" style="color: var(--bad)">Not Loaded!</span>
+				</div>
+			</div>
+		</div>
+	</body>
+</html>

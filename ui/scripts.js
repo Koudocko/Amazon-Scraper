@@ -8,28 +8,25 @@ function fetchProduct(data = null){
 		})
 	}
 	else{
-		console.log(data);
 		data = JSON.parse(data.replace(/[\r\n]/gm, ''));
 	}
 		
 	if (data == null){
-		data[0] = "None";
-		data[1] = "img/dotdotdot.jpg";
-		data[2] = "None";
-		data[3] = "None";
+		data = ["None", "img/dotdotdot.jpg", "None", "None", "None"];
 	}
 
 	document.getElementById("productName").innerHTML = data[0];
 	document.getElementById("productImage").setAttribute("src", data[1]);
 	document.getElementById("productDescription").innerHTML = data[2];
-	document.getElementById("productMsrp").innerHTML = data[3];
+	document.getElementById("productMSRP").innerHTML = data[3];
+	document.getElementById("productASIN").innerHTML = data[4];
 }
 
 function writeProduct(){
 	const { invoke } = window.__TAURI__.tauri
 
 	var payload = JSON.parse('[]');
-	payload.push(document.getElementById("productLot").value);
+	payload.push(document.getElementById("productLOT").value);
 	payload.push(document.getElementById("productName").innerHTML);
 	payload.push(document.getElementById("productDescription").innerHTML);
 	var temp = document.getElementById("productCondition");
@@ -47,8 +44,8 @@ function writeProduct(){
 	invoke('write_product', { information: payload })
 		.then((result) =>{
 			if (result != null){
-				var val = document.getElementById("productLot").value; 
-				document.getElementById("productLot").setAttribute("value", (parseInt(val) + 1).toString());
+				var val = document.getElementById("productLOT"); 
+				val.setAttribute("value", (parseInt(val.value) + 1).toString());
 			}
 	})
 }
@@ -62,9 +59,9 @@ function findProduct(){
 	invoke('find_product', { name: document.getElementById("nameInput").value })
 		.then((result) =>{
 			for (data of result){
-				div.innerHTML +=
-				'<div class="container" ' + "onClick='fetchProduct(`"
-					+ JSON.stringify(data) + "`)'" + 'style="outline: red solid 5px;">' +
+				// div.innerHTML +=
+				console.log('<div class="container" ' + "onClick='fetchProduct(`"
+					+ JSON.stringify(data) + "`)'>" + 
 					'<img style="height: 100px;" src="' 
 					+ data[1] + `">` +
 					`<div>
@@ -73,7 +70,7 @@ function findProduct(){
 						<div>ASIN: <span>`
 						+ data[4] + `<span></div>
 					</div>
-				</div>`;
+				</div>`);
 			}
 	})
 }
