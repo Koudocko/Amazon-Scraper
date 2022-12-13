@@ -60,27 +60,26 @@
 				Description: <span id="productDescription"></span>
 			</div>
 			<div id="searchResults" class="grid-item" style="overflow: scroll;">
-<div class="container" onClick='fetchProduct(`["Scotch-Brite Non-Scratch Advanced Soap Control Dishwand, Leak-Free Guarantee, Long Lasting and Reusable","https://m.media-amazon.com/images/I/71iNGFtkBpL.__AC_SX300_SY300_QL70_ML2_.jpg","Valve prevents dish soap from leaking, no matter how the dishwand is stored ; Button allows for precise soap control, dispensing soap where and when needed ; Non-scratch cleaning power for everyday jobs ; Safe on: Non-stick cookware, countertops, tiles, showers and tubs and more ; Scrubbing fibers are made from 100% recycled content ; Soft-touch surface provides a non-slip grip ; ","$6.69","B07PB5NP63"]`)'><img style="height: 100px;" src="https://m.media-amazon.com/images/I/71iNGFtkBpL.__AC_SX300_SY300_QL70_ML2_.jpg"><div> 
-						<div>Name: <span>Scotch-Brite Non-Scratch Advanced Soap Control Dishwand, Leak-Free Guarantee, Long Lasting and Reusable<span></div>
-						<div>ASIN: <span>B07PB5NP63<span></div>
-					</div>
-				</div>
+				<div class="search-result button" onClick='fetchProduct(`["ATTITUDE Baby Fabric Softener, Hypoallergenic, Non-toxic, ECOLOGO Certified, Fluid Ounce, 40 Loads 33.8 Fl Oz Sweet Lullaby (42137)","https://m.media-amazon.com/images/I/61g4HYTH9GL.__AC_SX300_SY300_QL70_ML2_.jpg","Plant-based, biodegradable and hypoallergenic baby fabric softener that leaves clothes huggably soft ; Free of dyes, artificial fragrances, enzymes, phenoxyethanol, parabens ; Hypoallergenic and dermatologically-tested: safe for baby with sensitive skin ; Eco-friendly product certified by ECOLOGO, PETA certified, Vegan and Cruelty-free ; Formulated for cold water, HE (High Efficiency) and standard washers ; ","Page 1 of 1","B00OKD7R9U"]`)'><img class="search-result-img" style="height: 100px" src="https://m.media-amazon.com/images/I/61g4HYTH9GL.__AC_SX300_SY300_QL70_ML2_.jpg">
+					<div>Name: <span>ATTITUDE Baby Fabric Softener, Hypoallergenic, Non-toxic, ECOLOGO Certified, Fluid Ounce, 40 Loads 33.8 Fl Oz Sweet Lullaby (42137)<span></div>
+					<div>ASIN: <span>B00OKD7R9U<span></div>
+				</div>		
 			</div>
 			<div class="inner-grid-2">
-				<div class="grid-item inner-grid-2-flex-1 vertical-center">
+				<div class="grid-item vertical-center" style="white-space: nowrap;">
 					Name: <span id="productName"></span>
 				</div>
 				<div id="inputStates" class="grid-item inner-grid-2-2">
 					Input States: <br>
 				</div>
-				<div class="grid-item inner-grid-2-flex-1 vertical-center">
+				<div class="grid-item vertical-center">
 					MSRP: <span id="productMSRP"></span>
 				</div>
-				<div class="grid-item inner-grid-2-flex-1 vertical-center">
+				<div class="grid-item vertical-center">
 					ASIN: <span id="productASIN"></span>
 				</div>
 				<div class="grid-item vertical-center">
-					LOT# <input id="productLOT" class="grid-item input-box" type="number" min="0" size="5" value="0">
+					LOT# <input id="productLOT" class="grid-item input-box" type="number" min="0" size="5" maxlength="5" value="0">
 				</div>
 				<div class="grid-item vertical-center">
 					Output State: <span id="outputState" style="color: var(--bad)">Not Loaded!</span>

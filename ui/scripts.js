@@ -59,18 +59,16 @@ function findProduct(){
 	invoke('find_product', { name: document.getElementById("nameInput").value })
 		.then((result) =>{
 			for (data of result){
-				// div.innerHTML +=
-				console.log('<div class="container" ' + "onClick='fetchProduct(`"
+				div.innerHTML +=
+				'<div class="search-result button" ' + "onClick='fetchProduct(`"
 					+ JSON.stringify(data) + "`)'>" + 
-					'<img style="height: 100px;" src="' 
+					'<img class="search-result-img" style="height: 100px;" src="' 
 					+ data[1] + `">` +
-					`<div>
-						<div>Name: <span>`
-						+ data[0] + `<span></div>
-						<div>ASIN: <span>`
-						+ data[4] + `<span></div>
-					</div>
-				</div>`);
+					`<div>Name: <span>`
+					+ data[0] + `<span></div>
+					<div>ASIN: <span>`
+					+ data[4] + `<span></div>
+				</div>`;
 			}
 	})
 }
