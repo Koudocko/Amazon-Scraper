@@ -26,15 +26,23 @@ static mut INPUT_COUNT: i32 = 0;
 fn lookup_product(lpn: &str)-> Result<String, ()>{
     let sheets = (*DATABASE.lock().unwrap()).clone();
     for sheet in sheets{
-        let lpn_idx = (0..sheet.width()).find(|idx| sheet.get((0, *idx)).unwrap() == "LPN").unwrap();
-        let asin_idx = (0..sheet.width()).find(|idx| sheet.get((0, *idx)).unwrap() == "Asin").unwrap();
-
-        for row in sheet.rows(){
-             let curr = row[lpn_idx].to_string();
-             if curr == lpn{
-                 return Ok(row[asin_idx].to_string());
-             }
+        if let Some(lpn_idx) = (0..sheet.width()).find(|idx| sheet.get((0, *idx)).unwrap() == "LPN"){
+            if let Some(asin_idx) = (0..sheet.width()).find(|idx| sheet.get((0, *idx)).unwrap() == "Asin"){
+                for row in sheet.rows(){
+                     let curr = row[lpn_idx].to_string();
+                     if curr == lpn{
+                         return Ok(row[asin_idx].to_string());
+                     }
+                }
+            }
+            else{
+                return Err(())
+            }
         }
+        else{
+            return Err(())
+        }
+
     }
 
     Err(())
@@ -43,40 +51,46 @@ fn lookup_product(lpn: &str)-> Result<String, ()>{
 fn scrape_data(body: &str)-> Result<[String; 4], ()>{
     let mut product: [String; 4] = Default::default(); 
 
+    println!("{body}");
     // Scrape html for data
     let fragment = Html::parse_document(&body);
     if let Some(name) = fragment.select(
         &Selector::parse(r#"span[id="productTitle"]"#).unwrap())
         .next(){
         product[0] = name.inner_html().trim().to_owned();
+        println!("name: {}", product[0]);
     }
 
     if let Some(image) = fragment.select(
         &Selector::parse(r#"img[id="imgBlkFront"]"#).unwrap())
         .next(){
         product[1] = image.value().attr("src").unwrap().to_owned();
+        println!("image: {}", product[1]);
     }
     else if let Some(image) = fragment.select(
         &Selector::parse(r#"img[id="landingImage"]"#).unwrap())
         .next(){
         product[1] = image.value().attr("src").unwrap().to_owned();
+        println!("image: {}", product[1]);
     }
 
     for description in fragment.select(
         &Selector::parse(r#"div[id="feature-bullets"] > ul > li > span.a-list-item"#).unwrap()){
         product[2] += &(description.inner_html().trim().to_owned() + " ; ");
+        println!("description: {}", product[2]);
     }
     if let Some(description) = fragment.select(
         &Selector::parse(r#"div[id="bookDescription_feature_div"] > div > div > span"#).unwrap())
         .next(){
         product[2] += &("\n".to_owned() + description.inner_html().trim());
+        println!("description: {}", product[2]);
     }
 
     if let Some(msrp) = fragment.select(
         &Selector::parse(r#"span > span.a-offscreen"#).unwrap())
         .next(){
         product[3] = msrp.inner_html().trim().to_owned();
-        
+        println!("msrp: {}", product[3]);
     }
     
     if product[0].is_empty(){
@@ -119,6 +133,7 @@ async fn find_product(name: String)-> Vec<Vec<String>>{
 
             if let Some(val) = matcher.fuzzy_match(&broken_entry.0, &name){
                 if val >= 100 && duplicates.get(&val).is_none(){
+                    println!("found");
                     duplicates.insert(val);
 
                     for ele in &matches{
@@ -151,6 +166,7 @@ async fn find_product(name: String)-> Vec<Vec<String>>{
         }
     }
 
+    println!("{}", found_list.len());
     found_list
 }
 
