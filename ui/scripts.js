@@ -1,4 +1,4 @@
-function fetchProduct(data = null, input = null){
+function fetchProduct(asin = null, input = null){
 	const { invoke } = window.__TAURI__.tauri 
 	
 	var inputVal;
@@ -9,37 +9,34 @@ function fetchProduct(data = null, input = null){
 		inputVal = document.getElementById("lpnInput").value;
 	}
 
-	console.log(input);
-	console.log(inputVal);
-
-	if (data == null){
+	if (input != null){
 		invoke('get_product', { search: input, key: inputVal })
 			.then((result) =>{
-				data = result;
-
-				if (data == null){
-					data = ["", "img/dotdotdot.jpg", "", "", ""];
+				if (result == null){
+					result = ["", "img/dotdotdot.jpg", "", "", ""];
 				}
 
-				document.getElementById("productName").innerHTML = data[0];
-				document.getElementById("productImage").setAttribute("src", data[1]);
-				document.getElementById("productDescription").innerHTML = data[2];
-				document.getElementById("productMSRP").innerHTML = data[3];
-				document.getElementById("productASIN").innerHTML = data[4];
+				document.getElementById("productName").innerHTML = result[0];
+				document.getElementById("productImage").setAttribute("src", result[1]);
+				document.getElementById("productDescription").innerHTML = result[2];
+				document.getElementById("productMSRP").innerHTML = result[3];
+				document.getElementById("productASIN").innerHTML = result[4];
 		})
 	}
 	else{
-		data = JSON.parse(data.replace(/[\r\n]/gm, ''));
+		console.log(asin);
+		invoke('get_result', { key: asin })
+			.then((result) =>{
+				if (result == null){
+					result = ["", "img/dotdotdot.jpg", "", "", ""];
+				}
 
-		if (data == null){
-			data = ["", "img/dotdotdot.jpg", "", "", ""];
-		}
-
-		document.getElementById("productName").innerHTML = data[0];
-		document.getElementById("productImage").setAttribute("src", data[1]);
-		document.getElementById("productDescription").innerHTML = data[2];
-		document.getElementById("productMSRP").innerHTML = data[3];
-		document.getElementById("productASIN").innerHTML = data[4];
+				document.getElementById("productName").innerHTML = result[0];
+				document.getElementById("productImage").setAttribute("src", result[1]);
+				document.getElementById("productDescription").innerHTML = result[2];
+				document.getElementById("productMSRP").innerHTML = result[3];
+				document.getElementById("productASIN").innerHTML = result[4];
+			})
 	}
 }
 
@@ -65,10 +62,7 @@ function writeProduct(){
 	invoke('write_product', { information: payload })
 		.then((result) =>{
 			if (result != null){
-				console.log("good");
 				var val = document.getElementById("productLOT"); 
-				console.log(val.value);
-				console.log((parseInt(val.value) + 1));
 				val.setAttribute("value", (parseInt(val.value) + 1).toString());
 			}
 	})
@@ -84,15 +78,24 @@ function findProduct(){
 		.then((result) =>{
 			for (data of result){
 				div.innerHTML +=
-				'<div class="search-result button" ' + "onClick='fetchProduct(`"
-					+ JSON.stringify(data) + "`)'>" + 
-					'<img class="search-result-img" src="' 
+					`<div class="search-result button" onClick="fetchProduct('` + data[4] + `')"> 
+					<img class="search-result-img" src="`
 					+ data[1] + `">` +
 					`<div>ASIN: <p>`
 					+ data[4] + `</p></div>
 					<div>Name: <p>`
 					+ data[0] + `</p></div>
 				</div>`;
+
+				console.log(
+					`<div class="search-result button" onClick="fetchProduct('` + data[4] + `')">
+					<img class="search-result-img" src="`
+					+ data[1] + `">` +
+					`<div>ASIN: <p>`
+					+ data[4] + `</p></div>
+					<div>Name: <p>`
+					+ data[0] + `</p></div>
+				</div>`);
 			}
 	})
 }

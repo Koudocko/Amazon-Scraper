@@ -8,8 +8,9 @@ use tauri::{CustomMenuItem, Menu, Submenu, Window, Manager};
 use fuzzy_matcher::skim::SkimMatcherV2;
 use fuzzy_matcher::FuzzyMatcher;
 use scraper::{Html, Selector};
-use std::collections::HashSet;
+use std::collections::{HashSet, HashMap};
 use std::sync::{Mutex, mpsc};
+use once_cell::sync::Lazy;
 use std::fs::OpenOptions;
 use tauri::api::dialog;
 use std::path::Path;
@@ -23,6 +24,9 @@ static mut OUTPUT_PATH: Option<String> = None;
 static mut WINDOW: Option<Window> = None;
 static mut INPUT_COUNT: i32 = 0;
 static INPUT_STATES: Mutex<(String, String)> = Mutex::new((String::new(), String::new()));
+static SEARCH_RESULTS: Lazy<Mutex<HashMap<String, Vec<String>>>> = Lazy::new(||{
+    Mutex::new(HashMap::new())
+});
 
 fn get_idx(sheet: &Range<DataType>, pattern: &str)-> Option<usize>{
     (0..sheet.width()).find(|idx| sheet.get((0, *idx)).unwrap() == pattern)
@@ -152,14 +156,20 @@ async fn find_product(name: String)-> Vec<Vec<String>>{
             if let Ok(data) = scrape_data(&body){
                 let mut element = Vec::new();
                 element.extend(data);
-                element.push(task.0);
-                found_list.push(element);
+                element.push(task.0.to_owned());
+                found_list.push(element.to_owned());
+                SEARCH_RESULTS.lock().unwrap().insert(task.0, element);
             }
         }
     }
 
     println!("{}", found_list.len());
     found_list
+}
+
+#[tauri::command]
+fn get_result(key: String)-> Option<Vec<String>>{
+    SEARCH_RESULTS.lock().unwrap().get(&key).cloned()
 }
 
 #[tauri::command]
@@ -358,7 +368,7 @@ async fn main(){
             _ =>{}
         }
     })
-    .invoke_handler(tauri::generate_handler![get_product, write_product, find_product, on_load, on_leave])
+    .invoke_handler(tauri::generate_handler![get_product, write_product, find_product, on_load, on_leave, get_result])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");
 }
