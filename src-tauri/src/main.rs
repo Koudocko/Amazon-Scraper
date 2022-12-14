@@ -145,12 +145,17 @@ async fn find_product(name: String)-> Vec<Vec<String>>{
     }
 
     let mut tasks = Vec::new();
+    let mut found_list = Vec::<Vec<String>>::new();
     
     for request in matches{
-        tasks.push((request.0.to_owned(), tokio::spawn(reqwest::get(format!("https://amazon.com/dp/{}", request.0)))));
+        if let Some(found) = SEARCH_RESULTS.lock().unwrap().get(&request.0){
+            found_list.push(found.to_owned());
+        }
+        else{
+            tasks.push((request.0.to_owned(), tokio::spawn(reqwest::get(format!("https://amazon.com/dp/{}", request.0)))));
+        }
     }
 
-    let mut found_list = Vec::<Vec<String>>::new();
     for task in tasks{
         if let Ok(body) = task.1.await.unwrap().unwrap().text().await{
             if let Ok(data) = scrape_data(&body){
@@ -240,7 +245,6 @@ async fn write_product(information: [String; 10])-> Option<bool>{
                 else
                     {false}
             }){
-                println!("woah");
                 for field in 0..9{
                     handle.write_all(("\"".to_owned() + &information[field] + "\",").as_bytes()).unwrap();
                 }
@@ -264,7 +268,6 @@ async fn write_product(information: [String; 10])-> Option<bool>{
                 Some(true)
             }
             else{
-                println!("what");
                 None        
             }
         }
