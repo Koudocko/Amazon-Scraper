@@ -1,25 +1,46 @@
-function fetchProduct(data = null){
+function fetchProduct(data = null, input = null){
 	const { invoke } = window.__TAURI__.tauri 
 	
+	var inputVal;
+	if (input == "UPC"){
+		inputVal = document.getElementById("upcInput").value;
+	}
+	else if (input == "LPN"){
+		inputVal = document.getElementById("lpnInput").value;
+	}
+
+	console.log(input);
+	console.log(inputVal);
+
 	if (data == null){
-		invoke('get_product', { lpn: document.getElementById("lpnInput").value })
+		invoke('get_product', { search: input, key: inputVal })
 			.then((result) =>{
 				data = result;
+
+				if (data == null){
+					data = ["", "img/dotdotdot.jpg", "", "", ""];
+				}
+
+				document.getElementById("productName").innerHTML = data[0];
+				document.getElementById("productImage").setAttribute("src", data[1]);
+				document.getElementById("productDescription").innerHTML = data[2];
+				document.getElementById("productMSRP").innerHTML = data[3];
+				document.getElementById("productASIN").innerHTML = data[4];
 		})
 	}
 	else{
 		data = JSON.parse(data.replace(/[\r\n]/gm, ''));
-	}
-		
-	if (data == null){
-		data = ["None", "img/dotdotdot.jpg", "None", "None", "None"];
-	}
 
-	document.getElementById("productName").innerHTML = data[0];
-	document.getElementById("productImage").setAttribute("src", data[1]);
-	document.getElementById("productDescription").innerHTML = data[2];
-	document.getElementById("productMSRP").innerHTML = data[3];
-	document.getElementById("productASIN").innerHTML = data[4];
+		if (data == null){
+			data = ["", "img/dotdotdot.jpg", "", "", ""];
+		}
+
+		document.getElementById("productName").innerHTML = data[0];
+		document.getElementById("productImage").setAttribute("src", data[1]);
+		document.getElementById("productDescription").innerHTML = data[2];
+		document.getElementById("productMSRP").innerHTML = data[3];
+		document.getElementById("productASIN").innerHTML = data[4];
+	}
 }
 
 function writeProduct(){
@@ -62,13 +83,33 @@ function findProduct(){
 				div.innerHTML +=
 				'<div class="search-result button" ' + "onClick='fetchProduct(`"
 					+ JSON.stringify(data) + "`)'>" + 
-					'<img class="search-result-img" style="height: 100px;" src="' 
+					'<img class="search-result-img" src="' 
 					+ data[1] + `">` +
-					`<div>Name: <span>`
-					+ data[0] + `<span></div>
-					<div>ASIN: <span>`
-					+ data[4] + `<span></div>
+					`<div>ASIN: <p>`
+					+ data[4] + `</p></div>
+					<div>Name: <p>`
+					+ data[0] + `</p></div>
 				</div>`;
+			}
+	})
+}
+
+function changePageBefore(path){
+	const { invoke } = window.__TAURI__.tauri
+
+	invoke('on_leave', { input: document.getElementById("inputStates").innerHTML })
+		.then(() =>{})
+	
+	location.replace(path);
+}
+
+function changePageAfter(){
+	const { invoke } = window.__TAURI__.tauri
+
+	invoke('on_load', {})
+		.then((result) =>{
+			if (result.length != 0){
+				document.getElementById("inputStates").innerHTML = result
 			}
 	})
 }

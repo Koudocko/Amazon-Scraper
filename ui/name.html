@@ -6,19 +6,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Amazon Scraper | Name Lookup</title>
 	</head>
-	<body>
+	<body onLoad="changePageAfter()">
     <script src="scripts.js"></script>
 		<div class="outer-grid">
 			<div class="inner-flex-1">
 				<button class="grid-item button" onClick="findProduct()">Find Product</button>
 				<div class="grid-item vertical-center">
-					Name: <input id="nameInput" class="grid-item input-box" size="13" maxlength="13"> 	
+					Name: <input id="nameInput" class="grid-item input-box"> 	
 				</div>
 			</div>
 			<div class="inner-flex-2">
-				<a class="grid-item vertical-center button inner-flex-2-1" href="lpn.html">LPN Lookup</a>
-				<a class="grid-item vertical-center button inner-flex-2-2" href="upc.html">UPC Lookup</a>
-				<a class="grid-item vertical-center button inner-flex-2-3 highlight-item" href="name.html">Name Lookup</a>
+				<a class="grid-item vertical-center button inner-flex-2-1" href="lpn.html" onClick="changePageBefore('lpn.html')">LPN Lookup</a>
+				<a class="grid-item vertical-center button inner-flex-2-2" href="upc.html" onClick="changePageBefore('upc.html')">UPC Lookup</a>
+				<a class="grid-item vertical-center button inner-flex-2-3" style="background-color: var(--highlight);">Name Lookup</a>
 			</div>
 			<div class="inner-grid-1">
         <select id="productVendor" class="grid-item input-box">
@@ -57,26 +57,21 @@
         </select>
 			</div>
 			<div class="grid-item">
-				Description: <span id="productDescription"></span>
+				Description: <p id="productDescription"></p>
 			</div>
-			<div id="searchResults" class="grid-item" style="overflow: scroll;">
-				<div class="search-result button" onClick='fetchProduct(`["ATTITUDE Baby Fabric Softener, Hypoallergenic, Non-toxic, ECOLOGO Certified, Fluid Ounce, 40 Loads 33.8 Fl Oz Sweet Lullaby (42137)","https://m.media-amazon.com/images/I/61g4HYTH9GL.__AC_SX300_SY300_QL70_ML2_.jpg","Plant-based, biodegradable and hypoallergenic baby fabric softener that leaves clothes huggably soft ; Free of dyes, artificial fragrances, enzymes, phenoxyethanol, parabens ; Hypoallergenic and dermatologically-tested: safe for baby with sensitive skin ; Eco-friendly product certified by ECOLOGO, PETA certified, Vegan and Cruelty-free ; Formulated for cold water, HE (High Efficiency) and standard washers ; ","Page 1 of 1","B00OKD7R9U"]`)'><img class="search-result-img" style="height: 100px" src="https://m.media-amazon.com/images/I/61g4HYTH9GL.__AC_SX300_SY300_QL70_ML2_.jpg">
-					<div>Name: <span>ATTITUDE Baby Fabric Softener, Hypoallergenic, Non-toxic, ECOLOGO Certified, Fluid Ounce, 40 Loads 33.8 Fl Oz Sweet Lullaby (42137)<span></div>
-					<div>ASIN: <span>B00OKD7R9U<span></div>
-				</div>		
-			</div>
+			<div id="searchResults" class="grid-item" style="overflow: scroll;"></div>
 			<div class="inner-grid-2">
-				<div class="grid-item vertical-center" style="white-space: nowrap;">
+				<div class="grid-item vertical-center" style="white-space: nowrap; text-align: ellipsis;">
 					Name: <span id="productName"></span>
 				</div>
 				<div id="inputStates" class="grid-item inner-grid-2-2">
 					Input States: <br>
 				</div>
 				<div class="grid-item vertical-center">
-					MSRP: <span id="productMSRP"></span>
+					MSRP: <span id="productMSRP" style="white-space: nowrap; text-overflow: ellipsis;"></span>
 				</div>
 				<div class="grid-item vertical-center">
-					ASIN: <span id="productASIN"></span>
+					ASIN: <span id="productASIN" style="white-space: nowrap; text-overflow: ellipsis;"></span>
 				</div>
 				<div class="grid-item vertical-center">
 					LOT# <input id="productLOT" class="grid-item input-box" type="number" min="0" size="5" maxlength="5" value="0">

@@ -22,75 +22,66 @@ static DATABASE: Mutex<Vec<Range<DataType>>> = Mutex::new(Vec::new());
 static mut OUTPUT_PATH: Option<String> = None;
 static mut WINDOW: Option<Window> = None;
 static mut INPUT_COUNT: i32 = 0;
+static INPUT_STATES: Mutex<String> = Mutex::new(String::new());
 
-fn lookup_product(lpn: &str)-> Result<String, ()>{
+fn get_idx(sheet: &Range<DataType>, pattern: &str)-> Option<usize>{
+    (0..sheet.width()).find(|idx| sheet.get((0, *idx)).unwrap() == pattern)
+}
+
+fn lookup_product(search: &str, key: &str)-> Result<String, ()>{
     let sheets = (*DATABASE.lock().unwrap()).clone();
     for sheet in sheets{
-        if let Some(lpn_idx) = (0..sheet.width()).find(|idx| sheet.get((0, *idx)).unwrap() == "LPN"){
-            if let Some(asin_idx) = (0..sheet.width()).find(|idx| sheet.get((0, *idx)).unwrap() == "Asin"){
+        if let Some(key_idx) = get_idx(&sheet, search){
+            if let Some(asin_idx) = get_idx(&sheet, "Asin"){
                 for row in sheet.rows(){
-                     let curr = row[lpn_idx].to_string();
-                     if curr == lpn{
+                     let curr = row[key_idx].to_string();
+                     if curr == key{
                          return Ok(row[asin_idx].to_string());
                      }
                 }
             }
-            else{
-                return Err(())
-            }
         }
-        else{
-            return Err(())
-        }
-
     }
 
     Err(())
 }
 
-fn scrape_data(body: &str)-> Result<[String; 4], ()>{
-    let mut product: [String; 4] = Default::default(); 
+fn scrape_data(body: &str)-> Result<Vec<String>, ()>{
+    let mut product = vec![String::new(); 4];
 
-    println!("{body}");
     // Scrape html for data
     let fragment = Html::parse_document(&body);
     if let Some(name) = fragment.select(
         &Selector::parse(r#"span[id="productTitle"]"#).unwrap())
         .next(){
         product[0] = name.inner_html().trim().to_owned();
-        println!("name: {}", product[0]);
     }
 
     if let Some(image) = fragment.select(
         &Selector::parse(r#"img[id="imgBlkFront"]"#).unwrap())
         .next(){
         product[1] = image.value().attr("src").unwrap().to_owned();
-        println!("image: {}", product[1]);
     }
     else if let Some(image) = fragment.select(
         &Selector::parse(r#"img[id="landingImage"]"#).unwrap())
         .next(){
         product[1] = image.value().attr("src").unwrap().to_owned();
-        println!("image: {}", product[1]);
     }
 
     for description in fragment.select(
         &Selector::parse(r#"div[id="feature-bullets"] > ul > li > span.a-list-item"#).unwrap()){
         product[2] += &(description.inner_html().trim().to_owned() + " ; ");
-        println!("description: {}", product[2]);
     }
     if let Some(description) = fragment.select(
         &Selector::parse(r#"div[id="bookDescription_feature_div"] > div > div > span"#).unwrap())
         .next(){
         product[2] += &("\n".to_owned() + description.inner_html().trim());
-        println!("description: {}", product[2]);
     }
 
     if let Some(msrp) = fragment.select(
         &Selector::parse(r#"span > span.a-offscreen"#).unwrap())
         .next(){
         product[3] = msrp.inner_html().trim().to_owned();
-        println!("msrp: {}", product[3]);
     }
     
     if product[0].is_empty(){
@@ -110,17 +101,19 @@ async fn find_product(name: String)-> Vec<Vec<String>>{
         let (mut broken_guard, db_guard) = (BROKEN_ENTRIES.lock().unwrap(), DATABASE.lock().unwrap());
         if broken_guard.is_empty() && !db_guard.is_empty(){
             for sheet in db_guard.clone(){
-                let lpn_idx = (0..sheet.width()).find(|idx| sheet.get((0, *idx)).unwrap() == "LPN").unwrap();
-                let name_idx = (0..sheet.width()).find(|idx| sheet.get((0, *idx)).unwrap() == "ItemDesc").unwrap();
-                let asin_idx = (0..sheet.width()).find(|idx| sheet.get((0, *idx)).unwrap() == "Asin").unwrap();
-
-                for row in sheet.rows(){
-                    let curr = row[lpn_idx].to_string();
-                    if curr.is_empty(){
-                        broken_guard.push(
-                             (row[name_idx].to_string(),
-                             row[asin_idx].to_string())
-                        );
+                if let Some(lpn_idx) = get_idx(&sheet, "LPN"){
+                    if let Some(name_idx) = get_idx(&sheet, "ItemDesc"){
+                        if let Some(asin_idx) = get_idx(&sheet, "Asin"){
+                            for row in sheet.rows(){
+                                let curr = row[lpn_idx].to_string();
+                                if curr.is_empty(){
+                                    broken_guard.push(
+                                         (row[name_idx].to_string(),
+                                         row[asin_idx].to_string())
+                                    );
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -171,12 +164,13 @@ async fn find_product(name: String)-> Vec<Vec<String>>{
 }
 
 #[tauri::command]
-async fn get_product(lpn: String)-> Option<[String; 4]>{
+async fn get_product(search: String, key: String)-> Option<Vec<String>>{
     if !DATABASE.lock().unwrap().is_empty(){
-        if let Ok(asin) = lookup_product(&lpn){
+        if let Ok(asin) = lookup_product(&search, &key){
             if let Ok(body) = reqwest::get(format!("https://amazon.com/dp/{}", asin))
                 .await.unwrap().text().await{
-                if let Ok(data) = scrape_data(&body){
+                if let Ok(mut data) = scrape_data(&body){
+                    data.extend(vec![asin]);
                     return Some(data);
                 }
             }
@@ -263,6 +257,16 @@ async fn write_product(information: [String; 10])-> Option<bool>{
     }
 }
 
+#[tauri::command]
+fn on_load()-> String{
+    (*INPUT_STATES.lock().unwrap()).to_owned()
+}
+
+#[tauri::command]
+fn on_leave(input: String){
+    *INPUT_STATES.lock().unwrap() = input;
+}
+
 #[tokio::main]
 async fn main(){
     let spreadsheet = CustomMenuItem::new("input".to_string(), "Input Spreadsheet");
@@ -341,7 +345,7 @@ async fn main(){
             _ =>{}
         }
     })
-    .invoke_handler(tauri::generate_handler![get_product, write_product, find_product])
+    .invoke_handler(tauri::generate_handler![get_product, write_product, find_product, on_load, on_leave])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");
 }

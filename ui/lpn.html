@@ -1,26 +1,27 @@
 <!DOCTYPE html>
 <html>
 	<head>
-		<link rel="stylesheet"
-			href="background_styles.css">
 		<link rel="stylesheet" href="styles.css">
-		<title>Grid Example</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Amazon Scraper | LPN Lookup</title>
 	</head>
-	<body>
+	<body onLoad="changePageAfter()">
+    <script src="scripts.js"></script>
 		<div class="outer-grid">
 			<div class="inner-flex-1">
-				<button class="grid-item button" onClick="fetchProduct()">Fetch Product</button>
+				<button class="grid-item button" onClick="fetchProduct(null, 'LPN')">Fetch Product</button>
 				<div class="grid-item vertical-center">
 					LPN: <input id="lpnInput" class="grid-item input-box" size="13" maxlength="13"> 	
 				</div>
 			</div>
 			<div class="inner-flex-2">
-				<a class="grid-item vertical-center button inner-flex-2-1 highlight-item" href="lpn.html">LPN Lookup</a>
-				<a class="grid-item vertical-center button inner-flex-2-2" href="upc.html">UPC Lookup</a>
-				<a class="grid-item vertical-center button inner-flex-2-3" href="name.html">Name Lookup</a>
+				<a class="grid-item vertical-center button inner-flex-2-1" style="background-color: var(--highlight);">LPN Lookup</a>
+				<a class="grid-item vertical-center button inner-flex-2-2" onClick="changePageBefore('upc.html')">UPC Lookup</a>
+				<a class="grid-item vertical-center button inner-flex-2-3" onClick="changePageBefore('name.html')">Name Lookup</a>
 			</div>
 			<div class="inner-grid-1">
-        <select class="grid-item input-box" id="productVendor">
+        <select id="productVendor" class="grid-item input-box">
           <option value="0">Vendor: </option>
           <option value="1">F2653</option>
           <option value="2">F2654</option>
@@ -29,9 +30,9 @@
           <option value="5">AMZN3</option>
         </select>
 				<div class="grid-item inner-grid-1-flex-2 vertical-center">
-					<img class="inner-grid-1-2" src="../img/dotdotdot.jpg">
+					<img id="productImage" class="inner-grid-1-2" src="img/dotdotdot.jpg">
 				</div>
-        <select class="grid-item input-box" id="productCondition">
+        <select id="productCondition" class="grid-item input-box">
           <option value="0">Condition: </option>
           <option value="1">New, Factory Sealed</option>
           <option value="2">New, Distressed Packaging</option>
@@ -40,7 +41,7 @@
           <option value="5">Open Box</option>
           <option value="6">New</option>
         </select>
-        <select class="grid-item input-box" id="productCategory">
+        <select id="productCategory" class="grid-item input-box">
           <option value="0">Category: </option>
           <option value="1">HW</option>
           <option value="2">PT</option>
@@ -56,24 +57,24 @@
         </select>
 			</div>
 			<div class="grid-item">
-				Description: <span id="productDescription"></span>
+				Description: <p id="productDescription"></p>
 			</div>
-			<div class="grid-item"></div>
+			<div id="searchResults" class="grid-item" style="overflow: scroll;"></div>
 			<div class="inner-grid-2">
-				<div class="grid-item inner-grid-2-flex-1 vertical-center">
+				<div class="grid-item vertical-center" style="white-space: nowrap; text-align: ellipsis;">
 					Name: <span id="productName"></span>
 				</div>
-				<div class="grid-item inner-grid-2-2">
-					Input States:
-				</div>
-				<div class="grid-item inner-grid-2-flex-1 vertical-center">
-					MSRP: <span id="productMSRP"></span>
-				</div>
-				<div class="grid-item inner-grid-2-flex-1 vertical-center">
-					ASIN: <span id="productASIN"></span>
+				<div id="inputStates" class="grid-item inner-grid-2-2">
+					Input States: <br>
 				</div>
 				<div class="grid-item vertical-center">
-					LOT# <input id="productLot" class="grid-item input-box" type="number" min="0" size="5" value="0">
+					MSRP: <span id="productMSRP" style="white-space: nowrap; text-overflow: ellipsis;"></span>
+				</div>
+				<div class="grid-item vertical-center">
+					ASIN: <span id="productASIN" style="white-space: nowrap; text-overflow: ellipsis;"></span>
+				</div>
+				<div class="grid-item vertical-center">
+					LOT# <input id="productLOT" class="grid-item input-box" type="number" min="0" size="5" maxlength="5" value="0">
 				</div>
 				<div class="grid-item vertical-center">
 					Output State: <span id="outputState" style="color: var(--bad)">Not Loaded!</span>
