@@ -22,7 +22,7 @@ static DATABASE: Mutex<Vec<Range<DataType>>> = Mutex::new(Vec::new());
 static mut OUTPUT_PATH: Option<String> = None;
 static mut WINDOW: Option<Window> = None;
 static mut INPUT_COUNT: i32 = 0;
-static INPUT_STATES: Mutex<String> = Mutex::new(String::new());
+static INPUT_STATES: Mutex<(String, String)> = Mutex::new((String::new(), String::new()));
 
 fn get_idx(sheet: &Range<DataType>, pattern: &str)-> Option<usize>{
     (0..sheet.width()).find(|idx| sheet.get((0, *idx)).unwrap() == pattern)
@@ -126,7 +126,6 @@ async fn find_product(name: String)-> Vec<Vec<String>>{
 
             if let Some(val) = matcher.fuzzy_match(&broken_entry.0, &name){
                 if val >= 100 && duplicates.get(&val).is_none(){
-                    println!("found");
                     duplicates.insert(val);
 
                     for ele in &matches{
@@ -205,6 +204,12 @@ async fn write_product(information: [String; 10])-> Option<bool>{
         rx.recv().unwrap();
 
         if let Some(path) = OUTPUT_PATH.clone(){
+            WINDOW.clone().unwrap().eval(r#"
+                var div = document.getElementById("outputState");
+                div.style.color = 'var(--good)';
+                div.innerHTML = "Loaded.";
+            "#).unwrap();
+
             let mut handle = OpenOptions::new()
                 .read(true)
                 .write(true)
@@ -219,32 +224,39 @@ async fn write_product(information: [String; 10])-> Option<bool>{
                 handle.write_all(header.as_bytes()).unwrap();
             }
 
-            for field in 0..9{
-                handle.write_all(("\"".to_owned() + &information[field] + "\",").as_bytes()).unwrap();
+            if !buf.split('\n').any(|line|{
+                if let Some(val) = line.split_once(',')
+                    {format!("\"{}\"", information[0]) == val.0}
+                else
+                    {false}
+            }){
+                println!("woah");
+                for field in 0..9{
+                    handle.write_all(("\"".to_owned() + &information[field] + "\",").as_bytes()).unwrap();
+                }
+
+                handle.write_all("\n".as_bytes()).unwrap();
+
+
+                if let Ok(img) = reqwest::get(&information[9]).await{
+                    let img = img.bytes().await.unwrap();
+                    let img = image::load_from_memory(&img);
+
+                    let path = OUTPUT_PATH.clone().unwrap();
+                    let parent_path = std::path::Path::new(&path)
+                        .parent().unwrap();
+                    img.unwrap().save_with_format(
+                        parent_path.join("LOT".to_owned() + &information[0] + ".jpg"), 
+                        image::ImageFormat::Jpeg
+                    ).unwrap();
+                }
+
+                Some(true)
             }
-
-            handle.write_all("\n".as_bytes()).unwrap();
-
-            WINDOW.clone().unwrap().eval(r#"
-                var div = document.getElementById("outputState");
-                div.style.color = 'var(--good)';
-                div.innerHTML = "Loaded.";
-            "#).unwrap();
-
-            if let Ok(img) = reqwest::get(&information[9]).await{
-                let img = img.bytes().await.unwrap();
-                let img = image::load_from_memory(&img);
-
-                let path = OUTPUT_PATH.clone().unwrap();
-                let parent_path = std::path::Path::new(&path)
-                    .parent().unwrap();
-                img.unwrap().save_with_format(
-                    parent_path.join("LOT".to_owned() + &information[0] + ".jpg"), 
-                    image::ImageFormat::Jpeg
-                ).unwrap();
+            else{
+                println!("what");
+                None        
             }
-
-            Some(true)
         }
         else{
             WINDOW.clone().unwrap().eval(r#"
@@ -258,13 +270,14 @@ async fn write_product(information: [String; 10])-> Option<bool>{
 }
 
 #[tauri::command]
-fn on_load()-> String{
+fn on_load()-> (String, String){
     (*INPUT_STATES.lock().unwrap()).to_owned()
 }
 
 #[tauri::command]
-fn on_leave(input: String){
-    *INPUT_STATES.lock().unwrap() = input;
+fn on_leave(input: String, output: String){
+    (*INPUT_STATES.lock().unwrap()).0 = input;
+    (*INPUT_STATES.lock().unwrap()).1 = output;
 }
 
 #[tokio::main]

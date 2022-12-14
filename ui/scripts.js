@@ -58,14 +58,17 @@ function writeProduct(){
 	payload.push("3");
 	temp = document.getElementById("productCategory");
 	payload.push(temp.options[temp.selectedIndex].text);
-	payload.push(document.getElementById("productMsrp").innerHTML);
+	payload.push(document.getElementById("productMSRP").innerHTML);
 	temp = document.getElementById("productImage");
 	payload.push(temp.getAttribute("src"));
 
 	invoke('write_product', { information: payload })
 		.then((result) =>{
 			if (result != null){
+				console.log("good");
 				var val = document.getElementById("productLOT"); 
+				console.log(val.value);
+				console.log((parseInt(val.value) + 1));
 				val.setAttribute("value", (parseInt(val.value) + 1).toString());
 			}
 	})
@@ -97,10 +100,11 @@ function findProduct(){
 function changePageBefore(path){
 	const { invoke } = window.__TAURI__.tauri
 
-	invoke('on_leave', { input: document.getElementById("inputStates").innerHTML })
-		.then(() =>{})
-	
-	location.replace(path);
+	invoke('on_leave', 
+		{ input: document.getElementById("inputStates").innerHTML, output: document.getElementById("outputState").innerHTML })
+		.then(() =>{
+			location.replace(path);
+		})
 }
 
 function changePageAfter(){
@@ -108,8 +112,15 @@ function changePageAfter(){
 
 	invoke('on_load', {})
 		.then((result) =>{
-			if (result.length != 0){
-				document.getElementById("inputStates").innerHTML = result
+			if (result[0].length != 0){
+				document.getElementById("inputStates").innerHTML = result[0];
+			}
+			if (result[1].length != 0){
+				document.getElementById("outputState").innerHTML = result[1];
+
+				if (document.getElementById("outputState").innerHTML  == "Loaded."){
+					document.getElementById("outputState").style.color = 'var(--good)';
+				}
 			}
 	})
 }
