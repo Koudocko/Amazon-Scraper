@@ -162,5 +162,5 @@ body{
 
 .inner-grid-2-2{
 	grid-row: span 3;
-	overflow: scroll;
+	overflow: auto;
 }
