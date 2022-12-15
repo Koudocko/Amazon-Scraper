@@ -11,12 +11,8 @@ use scraper::{Html, Selector};
 use std::collections::{HashSet, HashMap};
 use std::sync::{Mutex, mpsc};
 use once_cell::sync::Lazy;
-use std::fs::OpenOptions;
 use tauri::api::dialog;
-use reqwest::header;
 use std::path::Path;
-use std::io::Write;
-use std::io::Read;
 use std::thread;
 
 static BROKEN_ENTRIES: Mutex<Vec<(String, String)>> = Mutex::new(Vec::new());
@@ -235,32 +231,28 @@ async fn write_product(information: [String; 10])-> Option<bool>{
                 div.innerHTML = "Loaded.";
             "#).unwrap();
 
-            let mut handle = OpenOptions::new()
-                .read(true)
-                .write(true)
-                .open(path)
-                .unwrap();
+            let mut handle_read = csv::ReaderBuilder::new()
+                .has_headers(false)
+                .from_path(&path).unwrap();
 
-            let mut buf = String::new();
-            handle.read_to_string(&mut buf).unwrap();
+            let records = handle_read.records().skip(1).map(|record|{
+                if let Ok(record) = record
+                    {record}
+                else
+                    {csv::StringRecord::new()}
+            }).collect::<Vec<csv::StringRecord>>();
 
-            if !buf.contains('\n'){
-                let header = String::from("Lot,Lead,Description,Condition,Vendor,Shipping,Min Bid,Category,MSRP\n");
-                handle.write_all(header.as_bytes()).unwrap();
+            let mut handle_write = csv::Writer::from_path(&path).unwrap();
+            handle_write.write_record(&["Lot","Lead","Description","Condition","Vendor","Shipping","Min Bid","Category","MSRP"]).unwrap();
+
+            for record in &records{
+                handle_write.write_byte_record(record.as_byte_record()).unwrap();
             }
 
-            if !buf.split('\n').any(|line|{
-                if let Some(val) = line.split_once(',')
-                    {format!("\"{}\"", information[0]) == val.0}
-                else
-                    {false}
+            if !records.iter().any(|record|{
+                record[0] == information[0]
             }){
-                for field in 0..9{
-                    handle.write_all(("\"".to_owned() + &information[field] + "\",").as_bytes()).unwrap();
-                }
-
-                handle.write_all("\n".as_bytes()).unwrap();
-
+                handle_write.write_record(&information[0..9]).unwrap();
 
                 if let Ok(img) = reqwest::get(&information[9]).await{
                     let img = img.bytes().await.unwrap();
