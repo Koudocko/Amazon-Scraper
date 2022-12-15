@@ -13,6 +13,7 @@ use std::sync::{Mutex, mpsc};
 use once_cell::sync::Lazy;
 use std::fs::OpenOptions;
 use tauri::api::dialog;
+use reqwest::header;
 use std::path::Path;
 use std::io::Write;
 use std::io::Read;
@@ -147,12 +148,17 @@ async fn find_product(name: String)-> Vec<Vec<String>>{
     let mut tasks = Vec::new();
     let mut found_list = Vec::<Vec<String>>::new();
     
+    let client = reqwest::Client::builder()
+        .gzip(true)
+        .build().unwrap();
+
     for request in matches{
+        println!("found");
         if let Some(found) = SEARCH_RESULTS.lock().unwrap().get(&request.0){
             found_list.push(found.to_owned());
         }
         else{
-            tasks.push((request.0.to_owned(), tokio::spawn(reqwest::get(format!("https://amazon.com/dp/{}", request.0)))));
+            tasks.push((request.0.to_owned(), tokio::spawn(client.get(format!("https://amazon.com/dp/{}", request.0)).send())));
         }
     }
 
@@ -181,7 +187,11 @@ fn get_result(key: String)-> Option<Vec<String>>{
 async fn get_product(search: String, key: String)-> Option<Vec<String>>{
     if !DATABASE.lock().unwrap().is_empty(){
         if let Ok(asin) = lookup_product(&search, &key){
-            if let Ok(body) = reqwest::get(format!("https://amazon.com/dp/{}", asin))
+            let client = reqwest::Client::builder()
+                .gzip(true)
+                .build().unwrap();
+
+            if let Ok(body) = client.get(format!("https://amazon.com/dp/{}", asin)).send()
                 .await.unwrap().text().await{
                 if let Ok(mut data) = scrape_data(&body){
                     data.extend(vec![asin]);
